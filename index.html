@@ -260,10 +260,10 @@
                     </div>
 
                     <div>
-                        <label class="block text-[11px] font-bold text-slate-400 mb-2">支付人代墊方式</label>
+                        <label class="block text-[11px] font-bold text-slate-400 mb-2">支付方式</label>
                         <div id="payerButtonContainer" class="grid grid-cols-4 gap-1.5">
-                            <button type="button" data-payer="震" class="py-2 px-1 rounded-lg text-[11px] font-bold text-center border border-[#30363d] bg-[#161b22] text-slate-400 hover:text-white btn-option truncate">🐛 震先付</button>
-                            <button type="button" data-payer="沛" class="py-2 px-1 rounded-lg text-[11px] font-bold text-center border border-[#30363d] bg-[#161b22] text-slate-400 hover:text-white btn-option truncate">🐌 沛先付</button>
+                            <button type="button" data-payer="震" class="py-2 px-1 rounded-lg text-[11px] font-bold text-center border border-[#30363d] bg-[#161b22] text-slate-400 hover:text-white btn-option truncate">🐛 震</button>
+                            <button type="button" data-payer="沛" class="py-2 px-1 rounded-lg text-[11px] font-bold text-center border border-[#30363d] bg-[#161b22] text-slate-400 hover:text-white btn-option truncate">🐌 沛</button>
                             <button type="button" data-payer="現金" class="py-2 px-1 rounded-lg text-[11px] font-bold text-center border border-[#30363d] bg-[#161b22] text-slate-400 hover:text-white btn-option truncate">💵 現金付</button>
                             <button type="button" data-payer="交通卡" class="py-2 px-1 rounded-lg text-[11px] font-bold text-center border border-[#30363d] bg-[#161b22] text-slate-400 hover:text-white btn-option truncate">💳 交通卡</button>
                         </div>
@@ -271,9 +271,9 @@
 
                     <!-- Collapsible layout cards brand options -->
                     <div id="cardTypeContainer" class="hidden space-y-2 border-t border-dashed border-[#30363d] pt-3">
-                        <label class="block text-[11px] font-bold text-slate-400 mb-1">對應代墊信用卡</label>
+                        <label class="block text-[11px] font-bold text-slate-400 mb-1">對應信用卡</label>
                         <div id="cardButtonContainer" class="grid grid-cols-4 gap-1.5">
-                            <button type="button" data-card="Ubear" class="py-1.5 px-0.5 rounded-lg text-[10px] font-bold text-center border border-[#21262d] bg-[#0d1117] text-slate-500 hover:text-gray-300 btn-option truncate">Ubear</button>
+                            <button type="button" data-card="幣倍" class="py-1.5 px-0.5 rounded-lg text-[10px] font-bold text-center border border-[#21262d] bg-[#0d1117] text-slate-500 hover:text-gray-300 btn-option truncate">幣倍</button>
                             <button type="button" data-card="熊本熊" class="py-1.5 px-0.5 rounded-lg text-[10px] font-bold text-center border border-[#21262d] bg-[#0d1117] text-slate-500 hover:text-gray-300 btn-option truncate">熊本熊</button>
                             <button type="button" data-card="Paypay台幣" class="py-1.5 px-0.5 rounded-lg text-[10px] font-bold text-center border border-[#21262d] bg-[#0d1117] text-slate-500 hover:text-gray-300 btn-option truncate">Paypay台</button>
                             <button type="button" data-card="Paypay日幣" class="py-1.5 px-0.5 rounded-lg text-[10px] font-bold text-center border border-[#21262d] bg-[#0d1117] text-slate-500 hover:text-gray-300 btn-option truncate">Paypay日</button>
@@ -315,7 +315,7 @@
             <div class="bg-gradient-to-br from-[#161b22] to-[#1f242c] border border-[#30363d] rounded-2xl p-4 gap-3 flex flex-col shadow-md">
                 <div class="flex items-center justify-between">
                     <span class="text-sm font-bold text-[#10b981] flex items-center gap-1.5 border-l-3 border-[#10b981] pl-2">
-                        📊 旅程開銷與分帳試算
+                        📊 旅程開銷試算
                     </span>
                     <div class="flex items-center gap-1 text-[11px] text-gray-400 font-medium">
                         日幣匯率:
@@ -328,7 +328,7 @@
                         <div class="absolute top-2 right-2 flex items-center gap-1 bg-[#21262d] border border-[#30363d] py-1 px-2.5 rounded-full text-[10px] text-gray-400 font-semibold group-hover:text-blue-400 cursor-pointer">
                             📊 點此看圖表分析
                         </div>
-                        <span class="text-[11px] font-semibold text-blue-400 block">🌍 整體支出代墊 (折合台幣)</span>
+                        <span class="text-[11px] font-semibold text-blue-400 block">整體支出 (折合台幣)</span>
                         <span id="dashboardOverallTotalTwd" class="text-2xl font-black text-blue-400 block mt-1.5 font-mono">NT$ 0</span>
                         <div class="flex gap-4 mt-2 text-[10px] text-gray-500 border-t border-[#21262d] pt-1.5">
                             <span id="overallJpySum" class="font-mono">日幣: ¥0</span>
@@ -499,14 +499,14 @@
 
                 <!-- charts canvases -->
                 <div class="bg-[#0d1117] p-4 rounded-xl border border-[#21262d] space-y-2">
-                    <div class="text-xs text-[#58a6ff] font-bold text-center">🍣 消費類別比例分佈</div>
+                    <div class="text-xs text-[#58a6ff] font-bold text-center">消費類別比例分佈</div>
                     <div class="relative h-44 w-full">
                         <canvas id="categoryChartCanvas"></canvas>
                     </div>
                 </div>
 
                 <div class="bg-[#0d1117] p-4 rounded-xl border border-[#21262d] space-y-2">
-                    <div class="text-xs text-[#58a6ff] font-bold text-center">💳 支付方式與代墊佔比</div>
+                    <div class="text-xs text-[#58a6ff] font-bold text-center">💳 支付方式佔比</div>
                     <div class="relative h-44 w-full">
                         <canvas id="paymentChartCanvas"></canvas>
                     </div>
@@ -1468,7 +1468,7 @@
             e.preventDefault();
             const currentUser = auth.currentUser;
             if (!currentUser || !selectedTripId) {
-                showFlash('非法的對應代墊旅別群組 ❌', true);
+                showFlash('非法的對應旅別群組 ❌', true);
                 return;
             }
 
@@ -1476,7 +1476,7 @@
             const valAmt = parseFloat(s.amountInput.value);
 
             if (!title || isNaN(valAmt) || valAmt <= 0 || !selectedCategory || !selectedPayer) {
-                showFlash('請完整登記項目、金額、分類和代墊！ ⚠️', true);
+                showFlash('請完整登記項目、金額、分類！ ⚠️', true);
                 haptic(35);
                 return;
             }
@@ -1515,7 +1515,7 @@
                 }
 
                 await setDoc(ref, expensePayload);
-                showFlash(editingExpenseId ? '代墊消費數據修改成功 ✨' : '雲端記帳成功！💰', false);
+                showFlash(editingExpenseId ? '消費數據修改成功 ✨' : '雲端記帳成功！💰', false);
                 throwConfetti();
                 haptic(30);
 
@@ -1621,7 +1621,7 @@
                 return;
             }
 
-            const header = 'ID,消費時間,項目,分類,幣別,金額,支付方式,卡別,代墊帳號\n';
+            const header = 'ID,消費時間,項目,分類,幣別,金額,支付方式,卡別,帳號\n';
             const rows = records.map(r => {
                 const escape = (str) => {
                     if (str === null || str === undefined) return '';
