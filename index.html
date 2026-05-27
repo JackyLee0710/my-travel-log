@@ -1402,16 +1402,6 @@
         }
 
         // --- Firebase Configuration Fallbacks ---
-        let firebaseConfig;
-        try {
-            const configRes = await fetch('./firebase-applet-config.json');
-            if (configRes.ok) {
-                firebaseConfig = await configRes.json();
-            } else {
-                throw new Error("Local config load non-ok");
-            }
-        } catch (e) {
-            console.log("Using fallback configurations...", e);
 const firebaseConfig = {
   apiKey: "AIzaSyBjbKXnjarZA9yQ4vWp2LFh0DGUjfVDODI",
   authDomain: "travel-money-app-b12e1.firebaseapp.com",
@@ -1421,7 +1411,23 @@ const firebaseConfig = {
   appId: "1:867530751547:web:4ecaf6e9ccb8aad8b7e61e",
   measurementId: "G-Q6N5ZX1G3G"
 };
+
+        try {
+            const configRes = await fetch('./firebase-applet-config.json');
+            if (configRes.ok) {
+                const fetchedConfig = await configRes.json();
+                if (fetchedConfig && fetchedConfig.apiKey) {
+                    firebaseConfig = fetchedConfig;
+                    console.log("Successfully loaded Firebase config from local file.");
+                }
+            } else {
+                console.log("Local config file not found, using default pre-initialized fallback.");
+            }
+        } catch (e) {
+            console.log("Fetch firebase config error, utilizing pre-initialized fallback:", e);
         }
+
+        console.log("Initializing Firebase with config:", firebaseConfig);
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
