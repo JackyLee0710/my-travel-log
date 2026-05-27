@@ -1,13 +1,1958 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>沖繩快速記帳與分帳</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans TC', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Space Grotesk', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            -webkit-tap-highlight-color: transparent;
+        }
+        * {
+            touch-action: manipulation;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+        .btn-option {
+            transition: all 0.15s ease;
+        }
+        .btn-option.selected {
+            background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
+            color: #ffffff;
+            border-color: #58a6ff;
+            box-shadow: 0 4px 12px rgba(31, 111, 235, 0.3);
+        }
+        .summary-item {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeInUp 0.35s ease-out forwards;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            opacity: 0;
+            pointer-events: none;
+        }
+        @keyframes fall {
+            0% {
+                transform: translateY(-20px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(105vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#0e1117] min-h-screen text-gray-200 py-6 px-4 flex justify-center items-start">
+    <!-- CONFETTI PORTAL -->
+    <div id="confettiContainer" class="fixed inset-0 pointer-events-none overflow-hidden z-50"></div>
 
+    <!-- FLASH NOTIFICATION -->
+    <div id="flashNotice" class="fixed top-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-50 p-4 border rounded-xl shadow-2xl flex items-start gap-2 backdrop-blur-md transition-all duration-300 opacity-0 translate-y-[-20px] pointer-events-none">
+        <span class="text-lg">ℹ️</span>
+        <div id="flashText" class="text-xs font-semibold leading-relaxed break-all"></div>
+    </div>
+
+    <!-- MAIN CONTAINER WRAPPER -->
+    <div class="w-full max-w-xl flex flex-col gap-5">
+
+        <!-- 1. LOADING SCREEN -->
+        <div id="loadingScreen" class="bg-[#161b22] border border-[#21262d] rounded-2xl p-8 text-center shadow-2xl flex flex-col items-center gap-4 py-16">
+            <div class="text-5xl animate-bounce">🏝️🐕</div>
+            <h2 class="text-lg font-bold text-white">正在載入雲端開銷系統...</h2>
+            <p class="text-xs text-[#8b949e] font-mono">正在檢查 Firebase Auth 驗證狀態</p>
+        </div>
+
+        <!-- 2. LOGIN SCREEN -->
+        <div id="loginScreen" class="hidden bg-[#161b22] border border-[#21262d] rounded-2xl p-8 text-center shadow-2xl flex flex-col items-center gap-6 py-12">
+            <div class="text-6xl">🏝️🪙</div>
+            <div>
+                <h1 class="text-2xl font-black text-white tracking-tight">沖繩旅程雲端帳本</h1>
+                <p class="text-xs text-slate-500 mt-1 font-mono">Senior Full-stack & Firebase Synced</p>
+            </div>
+            
+            <div class="bg-blue-500/10 border border-blue-500/20 text-blue-400 p-4 rounded-xl text-left text-xs leading-relaxed">
+                <strong>💡 系統說明：</strong><br>
+                本系統已完全整合 Firebase 雲端資料庫與 Google 身分驗證。
+                登入後將採用即時數據同步，多裝置共向同一個旅行記帳，並支援多卡別分拆開銷。
+            </div>
+
+            <button id="googleLoginBtn" class="w-full bg-gradient-to-r from-[#1f6feb] to-[#388bfd] hover:brightness-110 active:scale-[0.98] text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer">
+                🔑 透過 Google 帳號登入
+            </button>
+        </div>
+
+        <!-- 3. UNAUTHORIZED / BLACKLIST SCREEN -->
+        <div id="unauthorizedScreen" class="hidden bg-[#161b22] border border-[#e74c3c]/20 rounded-2xl p-8 text-center shadow-2xl space-y-6">
+            <div class="text-6xl">⚠️</div>
+            <div>
+                <h1 class="text-2xl font-extrabold text-red-500 tracking-tight">登入未經授權</h1>
+                <p class="text-sm text-gray-400 mt-1">您的帳號尚未加入系統白名單！</p>
+            </div>
+
+            <div class="bg-[#0d1117] border border-[#21262d] p-3 rounded-xl text-left">
+                <span class="block text-xs text-gray-500 font-semibold">目前嘗試登入的信箱：</span>
+                <span id="unauthorizedEmail" class="block text-sm text-[#58a6ff] overflow-hidden truncate font-mono font-bold mt-1">...</span>
+            </div>
+
+            <div class="bg-yellow-500/5 border border-yellow-500/20 text-yellow-400/90 text-left text-xs p-4 rounded-xl space-y-2 leading-relaxed">
+                <strong class="text-yellow-400 font-bold block">✨ 系統啟用指南：</strong>
+                <ol class="list-decimal pl-4 space-y-1 text-slate-400">
+                    <li>請前往 Firebase Console 的 Firestore 資料庫頁面。</li>
+                    <li>新增一組名稱為 <strong class="text-white">allowed_users</strong> 的集合。</li>
+                    <li>建立文件：文件 ID 設為上方的電子信箱地址 (小寫)。</li>
+                    <li>在該文件內加入字串欄位 <strong class="text-white">email</strong>，值同樣輸入該信箱。</li>
+                </ol>
+            </div>
+
+            <button id="unauthLogoutBtn" class="w-full bg-[#21262d] hover:bg-[#30363d] text-red-400 font-semibold py-3 rounded-xl border border-[#da3633]/50 transition-all cursor-pointer">
+                🚪 登出並返回登入
+            </button>
+        </div>
+
+        <!-- 4. MAIN APP CONTAINER -->
+        <div id="appContainer" class="hidden flex flex-col gap-5">
+            
+            <!-- HEADER BLOCK -->
+            <div class="bg-[#161b22] border border-[#21262d] rounded-2xl p-5 text-center relative shadow-md">
+                <div class="absolute top-4 right-4 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-[10px] font-bold font-mono text-emerald-400 uppercase tracking-wider">Sync Live</span>
+                </div>
+
+                <h1 class="text-2xl font-extrabold text-white tracking-tight">沖繩快速記帳</h1>
+                <p class="text-xs text-gray-400 mt-1">來去看沖繩狗勾囉～ 🐕🏝️</p>
+
+                <!-- Profile and Signout -->
+                <div class="mt-4 p-3 bg-[#0d1117] rounded-xl border border-[#21262d] flex items-center justify-between text-xs text-left">
+                    <div class="flex items-center gap-2">
+                        <img id="userAvatar" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" class="w-10 h-10 rounded-full border-1.5 border-[#388bfd] object-cover" referrerpolicy="no-referrer">
+                        <div class="overflow-hidden">
+                            <span id="userName" class="block font-bold text-white leading-none truncate">讀取中...</span>
+                            <span id="userEmail" class="block text-[10px] text-gray-500 font-mono mt-0.5 truncate">...</span>
+                        </div>
+                    </div>
+                    <button id="authLogoutBtn" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-[#ff7b72] border border-red-500/20 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer">
+                        登出 🚪
+                    </button>
+                </div>
+
+                <!-- Trips management -->
+                <div class="mt-4 p-4 bg-[#1f242c]/50 rounded-xl border border-[#30363d] space-y-3 text-left">
+                    <div class="flex justify-between items-center gap-2">
+                        <span class="text-xs font-bold text-blue-400 flex items-center gap-1">
+                            ✈️ 選擇本次旅程:
+                        </span>
+                        <button id="openCreateTripModalBtn" class="px-2.5 py-1 text-[11px] font-bold bg-[#39d353]/10 hover:bg-[#39d353]/15 text-[#39d353] border border-[#39d353]/20 rounded-md transition-all flex items-center gap-0.5 cursor-pointer">
+                            ➕ 建立新旅程 🏕️
+                        </button>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <select id="tripSelector" class="w-full bg-[#0d1117] border border-[#30363d] font-bold text-white rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none appearance-none cursor-pointer">
+                                <option value="" disabled selected>載入旅程中...</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+
+                        <button id="copyTripLinkBtn" class="px-3 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-gray-200 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer">
+                            🔗 分享
+                        </button>
+                    </div>
+
+                    <!-- Invitation to join banner -->
+                    <div id="joinTripBlock" class="hidden p-3 bg-yellow-500/5 border border-yellow-500/25 rounded-lg text-center space-y-2">
+                        <p class="text-yellow-500 text-xs font-semibold">
+                            👋 旅伴發現！您目前不在「<span id="unjoinedTripName">...</span>」成員名單中！
+                        </p>
+                        <div class="flex justify-center">
+                          <button id="joinTripBtn" class="px-4 py-1.5 bg-[#f2cc60] hover:brightness-105 text-neutral-900 font-bold rounded-lg text-xs transition-transform transform active:scale-95 cursor-pointer">
+                            ➕ 按此加入旅群，共同記帳
+                          </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STATISTICS DASHBOARD BLOCK -->
+            <div class="bg-gradient-to-br from-[#161b22] to-[#1f242c] border border-[#30363d] rounded-2xl p-4 gap-3 flex flex-col shadow-md">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-bold text-[#10b981] flex items-center gap-1.5 border-l-3 border-[#10b981] pl-2">
+                        📊 旅程開銷與分帳試算
+                    </span>
+                    <div class="flex items-center gap-1 text-[11px] text-gray-400 font-medium">
+                        日幣匯率:
+                        <input id="exchangeRateInput" type="number" step="0.001" min="0.01" class="w-14 bg-[#0d1117] border border-[#30363d] rounded-md text-center text-[#58a6ff] text-xs font-bold font-mono py-0.5" value="0.2">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div id="overallTotalCard" class="col-span-2 bg-[#0d1117] border border-[#388bfd] hover:border-blue-400 rounded-xl p-3 text-left relative cursor-pointer group transition-all">
+                        <div class="absolute top-2 right-2 flex items-center gap-1 bg-[#21262d] border border-[#30363d] py-1 px-2.5 rounded-full text-[10px] text-gray-400 font-semibold group-hover:text-blue-400 cursor-pointer">
+                            📊 點此看圖表分析
+                        </div>
+                        <span class="text-[11px] font-semibold text-blue-400 block">🌍 整體支出代墊 (折合台幣)</span>
+                        <span id="dashboardOverallTotalTwd" class="text-2xl font-black text-blue-400 block mt-1.5 font-mono">NT$ 0</span>
+                        <div class="flex gap-4 mt-2 text-[10px] text-gray-500 border-t border-[#21262d] pt-1.5">
+                            <span id="overallJpySum" class="font-mono">日幣: ¥0</span>
+                            <span id="overallTwdSum" class="font-mono">台幣: NT$0</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#0d1117] border border-[#21262d] rounded-xl p-3">
+                        <span class="text-[11px] text-gray-500 font-semibold block">💴 日幣開銷總計</span>
+                        <span id="dashboardTotalJpy" class="text-lg font-bold text-white block mt-1 font-mono">¥0</span>
+                        <div id="dbSubJpy" class="text-[10px] text-slate-500 flex flex-col gap-0.5 mt-2 border-t border-[#21262d] pt-1.5">
+                            <div class="flex justify-between font-mono"><span>震付:</span><span>¥0</span></div>
+                            <div class="flex justify-between font-mono"><span>沛付:</span><span>¥0</span></div>
+                            <div class="flex justify-between font-mono"><span>現金:</span><span>¥0</span></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#0d1117] border border-[#21262d] rounded-xl p-3">
+                        <span class="text-[11px] text-gray-500 font-semibold block">💵 台幣開銷總計</span>
+                        <span id="dashboardTotalTwd" class="text-lg font-bold text-white block mt-1 font-mono">NT$0</span>
+                        <div id="dbSubTwd" class="text-[10px] text-slate-500 flex flex-col gap-0.5 mt-2 border-t border-[#21262d] pt-1.5">
+                            <div class="flex justify-between font-mono"><span>震付:</span><span>NT$0</span></div>
+                            <div class="flex justify-between font-mono"><span>沛付:</span><span>NT$0</span></div>
+                            <div class="flex justify-between font-mono"><span>現金:</span><span>NT$0</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXPENSE INPUT FORM -->
+            <form id="expenseForm" class="bg-[#161b22] border border-[#21262d] rounded-2xl p-5 shadow-lg space-y-4">
+                <div class="text-sm font-bold text-white flex items-center gap-1 border-l-3 border-[#3B82F6] pl-2">
+                    支出登記表
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label for="itemInput" class="block text-[11px] font-bold text-slate-400 mb-1 font-sans">消費項目</label>
+                        <input id="itemInput" type="text" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl text-white py-3 px-3.5 text-base focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]/15 focus:outline-none transition-all placeholder:text-[#484f58]" placeholder="如：暖暮拉麵、水族館門票" required>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-400 mb-1">幣別</label>
+                            <div id="currencyButtonContainer" class="flex bg-[#0d1117] p-1 border border-[#30363d] rounded-xl">
+                                <button type="button" data-currency="JPY" class="flex-1 py-1 px-3 text-xs font-bold rounded-lg transition-transform btn-option selected">日圓 ¥</button>
+                                <button type="button" data-currency="TWD" class="flex-1 py-1 px-3 text-xs font-bold rounded-lg transition-transform btn-option">台幣 $</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="amountInput" class="block text-[11px] font-bold text-slate-400 mb-1">金額</label>
+                            <input id="amountInput" type="number" inputmode="decimal" step="any" min="0.01" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl text-white py-2 px-3 text-base text-right font-mono font-bold focus:border-[#58a6ff] focus:outline-none transition-all" placeholder="0" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[11px] font-bold text-slate-400">消費分類</span>
+                            <span class="text-[9px] text-[#8b949e] italic">💡 長按自訂編輯分類</span>
+                        </div>
+                        <div id="categoryButtonContainer" class="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1 bg-[#0d1117] border border-[#21262d] rounded-xl">
+                            <!-- Filled dynamically -->
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-1.5 mt-2">
+                            <button id="addNewCategoryBtn" type="button" class="w-full py-1.5 border border-dashed border-[#388bfd] hover:border-blue-400 bg-blue-500/5 hover:bg-blue-500/10 rounded-lg text-xs font-semibold text-[#58a6ff] flex items-center justify-center gap-1 transition-all cursor-pointer">
+                                ➕ 建立新分類
+                            </button>
+                            <button id="manageCategoriesBtn" type="button" class="w-full py-1.5 border border-dashed border-[#e3b341] hover:border-yellow-400 bg-yellow-500/5 hover:bg-yellow-500/10 rounded-lg text-xs font-semibold text-[#f2cc60] flex items-center justify-center gap-1 transition-all cursor-pointer">
+                                ⚙️ 管理與隱藏分類
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 mb-2">支付人代墊方式</label>
+                        <div id="payerButtonContainer" class="grid grid-cols-4 gap-1.5">
+                            <button type="button" data-payer="震" class="py-2 px-1 rounded-lg text-[11px] font-bold text-center border border-[#30363d] bg-[#161b22] text-slate-400 hover:text-white btn-option truncate">🐛 震先付</button>
+                            <button type="button" data-payer="沛" class="py-2 px-1 rounded-lg text-[11px] font-bold text-center border border-[#30363d] bg-[#161b22] text-slate-400 hover:text-white btn-option truncate">🐌 沛先付</button>
+                            <button type="button" data-payer="現金" class="py-2 px-1 rounded-lg text-[11px] font-bold text-center border border-[#30363d] bg-[#161b22] text-slate-400 hover:text-white btn-option truncate">💵 現金付</button>
+                            <button type="button" data-payer="交通卡" class="py-2 px-1 rounded-lg text-[11px] font-bold text-center border border-[#30363d] bg-[#161b22] text-slate-400 hover:text-white btn-option truncate">💳 交通卡</button>
+                        </div>
+                    </div>
+
+                    <!-- Collapsible layout cards brand options -->
+                    <div id="cardTypeContainer" class="hidden space-y-2 border-t border-dashed border-[#30363d] pt-3">
+                        <label class="block text-[11px] font-bold text-slate-400 mb-1">對應代墊信用卡</label>
+                        <div id="cardButtonContainer" class="grid grid-cols-4 gap-1.5">
+                            <button type="button" data-card="Ubear" class="py-1.5 px-0.5 rounded-lg text-[10px] font-bold text-center border border-[#21262d] bg-[#0d1117] text-slate-500 hover:text-gray-300 btn-option truncate">Ubear</button>
+                            <button type="button" data-card="熊本熊" class="py-1.5 px-0.5 rounded-lg text-[10px] font-bold text-center border border-[#21262d] bg-[#0d1117] text-slate-500 hover:text-gray-300 btn-option truncate">熊本熊</button>
+                            <button type="button" data-card="Paypay台幣" class="py-1.5 px-0.5 rounded-lg text-[10px] font-bold text-center border border-[#21262d] bg-[#0d1117] text-slate-500 hover:text-gray-300 btn-option truncate">Paypay台</button>
+                            <button type="button" data-card="Paypay日幣" class="py-1.5 px-0.5 rounded-lg text-[10px] font-bold text-center border border-[#21262d] bg-[#0d1117] text-slate-500 hover:text-gray-300 btn-option truncate">Paypay日</button>
+                            <button type="button" data-card="Paypay熊本熊" class="py-1.5 px-0.5 rounded-lg text-[10px] font-bold text-center border border-[#21262d] bg-[#0d1117] text-slate-500 hover:text-gray-300 btn-option truncate">Paypay熊</button>
+                            <button type="button" data-card="大戶" class="py-1.5 px-0.5 rounded-lg text-[10px] font-bold text-center border border-[#21262d] bg-[#0d1117] text-slate-500 hover:text-gray-300 btn-option truncate">大戶</button>
+                            <button type="button" data-card="吉鶴" class="py-1.5 px-0.5 rounded-lg text-[10px] font-bold text-center border border-[#21262d] bg-[#0d1117] text-slate-500 hover:text-gray-300 btn-option truncate">吉鶴</button>
+                            <button type="button" data-card="其他" class="py-1.5 px-0.5 rounded-lg text-[10px] font-bold text-center border border-[#21262d] bg-[#0d1117] text-slate-500 hover:text-gray-300 btn-option truncate">其他</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="timestampInput" class="block text-[11px] font-bold text-slate-400 mb-1">記帳日期 & 時間</label>
+                        <input id="timestampInput" type="datetime-local" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl text-white py-2 px-3 text-xs focus:outline-none focus:border-[#58a6ff] transition-all" required>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button id="submitButton" type="submit" class="flex-1 bg-gradient-to-r from-[#1f6feb] to-[#388bfd] hover:brightness-110 active:scale-[0.98] text-white font-extrabold py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span id="submitButtonText">送出儲存至雲端</span>
+                    </button>
+                    <button id="cancelEditBtn" type="button" class="hidden px-4 border border-[#30363d] hover:bg-[#21262d] text-neutral-400 rounded-xl py-3 transition-colors text-xs cursor-pointer">
+                        取消
+                    </button>
+                </div>
+            </form>
+
+            <!-- RECORD LOG AREA -->
+            <div class="bg-[#161b22] border border-[#21262d] rounded-2xl p-5 shadow-lg space-y-4">
+                <div class="text-sm font-bold text-white flex items-center gap-1 border-l-3 border-[#3B82F6] pl-2">
+                    旅程消費明細
+                </div>
+
+                <div id="recordList" class="divide-y divide-[#21262d] overflow-y-auto max-h-[360px] pr-1 space-y-1">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- CSV ACTIONS -->
+            <div class="flex gap-3">
+                <button id="importCsvBtn" class="flex-1 py-2.5 bg-[#161b22] border border-[#30363d] hover:bg-[#21262d] text-slate-300 font-semibold rounded-xl text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5">
+                    📥 匯入資料 (CSV)
+                </button>
+                <button id="exportCsvBtn" class="flex-1 py-2.5 bg-[#161b22] border border-[#30363d] hover:bg-[#21262d] text-slate-300 font-semibold rounded-xl text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5">
+                    📤 匯出資料 (CSV)
+                </button>
+            </div>
+
+            <div class="text-center text-[10px] text-gray-500 py-2 border-t border-[#21262d] mt-2">
+                🔒 沖繩記帳已加載本機數據快取與防重防刪唯讀鎖
+            </div>
+
+            <input type="file" id="csvFileInput" class="hidden" accept=".csv">
+        </div>
+    </div>
+
+    <!-- MODAL 1: CREATE TRIP -->
+    <div id="createTripModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+        <div class="bg-[#161b22] border border-[#30363d] rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 relative">
+            <button id="closeCreateTripModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors cursor-pointer text-lg">&times;</button>
+            <h2 class="text-xl font-bold mb-4 text-center text-white flex items-center justify-center gap-2">
+                <span>🏕️</span> 建立新旅遊群組
+            </h2>
+            <div class="space-y-4">
+                <input type="text" id="newTripNameInput" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl text-white py-3 px-4 text-base focus:border-[#58a6ff] focus:outline-none transition-all placeholder:text-[#484f58]" placeholder="例如：2026 沖繩夏日大冒險 🐕" required>
+                <div class="bg-blue-950/20 border border-blue-900/40 text-blue-400 p-3 rounded-lg text-left text-xs leading-relaxed">
+                    💡 建立旅程後，您將自動加入為第一位旅伴。之後可以分享網址給其他旅伴，他們點開即可加入共同記帳！
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button id="saveTripBtn" class="flex-1 bg-gradient-to-r from-[#1f6feb] to-[#388bfd] hover:brightness-110 active:scale-[0.98] text-white font-semibold py-3 rounded-xl transition-all shadow-md cursor-pointer">確認建立 🗺️</button>
+                    <button id="cancelCreateTripModalBtn" class="flex-1 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-gray-300 font-semibold py-3 rounded-xl transition-colors cursor-pointer">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ADD / MANAGE CATEGORIES -->
+    <div id="addCategoryModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+        <div class="bg-[#161b22] border border-[#30363d] rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 relative flex flex-col max-h-[90vh]">
+            <button id="closeCategoryModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors cursor-pointer text-lg">&times;</button>
+            
+            <h2 id="categoryModalTitle" class="text-xl font-bold mb-4 text-center text-white">🍣 新增/管理分類項目</h2>
+            
+            <div class="space-y-4 overflow-y-auto pr-1 flex-1">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">分類符號 / Emoji</label>
+                    <input type="text" id="newCategoryEmoji" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl text-white py-2.5 px-3 text-base focus:border-[#58a6ff] focus:outline-none transition-all placeholder:text-[#484f58]" placeholder="輸入 Emoji (如: 🍣)" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">分類名稱</label>
+                    <input type="text" id="newCategoryName" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl text-white py-2.5 px-3 text-base focus:border-[#58a6ff] focus:outline-none transition-all placeholder:text-[#484f58]" placeholder="分類名稱 (如: 美食飲料)" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">分類色調</label>
+                    <div class="flex items-center gap-3">
+                        <div class="relative w-12 h-10 border border-[#30363d] rounded-xl overflow-hidden cursor-pointer bg-[#0d1117]">
+                            <input type="color" id="newCategoryColor" class="absolute -top-2 -left-2 w-[200%] h-[200%] border-0 cursor-pointer p-0 bg-transparent" value="#3B82F6">
+                        </div>
+                        <div id="colorPreview" class="w-10 h-10 rounded-xl border border-[#30363d] transition-colors duration-200" style="background-color: #3b82f6;"></div>
+                    </div>
+                </div>
+
+                <button id="saveCategoryBtn" class="w-full bg-gradient-to-r from-[#1f6feb] to-[#388bfd] hover:brightness-110 text-white font-semibold py-2.5 rounded-xl transition-all shadow-md cursor-pointer text-sm">新增分類</button>
+
+                <div class="space-y-2 mt-4 pt-4 border-t border-[#30363d]">
+                    <h3 class="text-xs font-bold text-slate-300">隱藏的分類 (點擊即可重新顯示)</h3>
+                    <div class="border border-[#30363d] rounded-xl bg-[#0d1117] max-h-[140px] overflow-y-auto divide-y divide-[#21262d]">
+                        <ul id="hiddenCategoriesList" class="text-xs">
+                            <!-- filled dynamically -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-2 border-t border-[#30363d]">
+                <button id="closeCategoryModalFooterBtn" class="w-full bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-gray-300 font-semibold py-2.5 rounded-xl transition-colors cursor-pointer text-sm">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: RECORD DETAIL VIEW AND DELETE/EDIT ACTIONS -->
+    <div id="recordModal" class="fixed inset-0 bg-black/85 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+        <div class="bg-[#161b22] border border-[#30363d] rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 relative">
+            <button id="closeRecordModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors cursor-pointer text-lg">&times;</button>
+            <h2 class="text-xl font-bold mb-4 text-center text-white border-b border-[#21262d] pb-3">消費明細詳情 🗺️</h2>
+            
+            <div id="modalContent" class="space-y-3 p-4 bg-[#0d1117] border border-[#21262d] rounded-xl text-gray-300 text-sm">
+                <!-- Loaded dynamically -->
+            </div>
+
+            <div class="mt-6 flex gap-3">
+                <button id="editRecordBtn" class="flex-1 bg-gradient-to-r from-[#238636] to-[#2ea043] hover:brightness-110 text-white font-semibold flex items-center justify-center gap-1 py-3 rounded-xl transition-all shadow-md cursor-pointer text-sm">編輯</button>
+                <button id="deleteRecordBtn" class="flex-1 bg-gradient-to-r from-[#da3633] to-[#f85149] hover:brightness-110 text-white font-semibold flex items-center justify-center gap-1 py-3 rounded-xl transition-all shadow-md cursor-pointer text-sm">刪除</button>
+            </div>
+            
+            <div class="mt-3">
+                <button id="closeRecordModalFooterBtn" class="w-full bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-gray-300 font-semibold py-2.5 rounded-xl transition-colors cursor-pointer text-sm">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: INTERACTIVE ANALYTICS VISUALIZER -->
+    <div id="analysisModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+        <div class="bg-[#161b22] border border-[#30363d] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl p-6 relative flex flex-col max-h-[90vh]">
+            
+            <div class="flex justify-between items-center border-b border-[#30363d] pb-3 mb-4">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">📊 沖繩旅行開銷分析</h2>
+                <button id="closeAnalysisModalIconBtn" class="text-gray-400 hover:text-white transition-colors cursor-pointer text-xl font-bold">&times;</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto space-y-5 pr-1 text-left">
+                <!-- Highlights metrics grid -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-[#0d1117] p-3 rounded-xl border border-[#21262d] text-center">
+                        <div class="text-[11px] text-gray-400">🏆 最大單筆支出</div>
+                        <div id="anaMaxExpense" class="text-xs font-bold text-[#ff7b72] mt-1 truncate">無</div>
+                    </div>
+                    <div class="bg-[#0d1117] p-3 rounded-xl border border-[#21262d] text-center">
+                        <div class="text-[11px] text-gray-400">🏷️ 最常消費類別</div>
+                        <div id="anaTopCategory" class="text-xs font-bold text-[#e3b341] mt-1 truncate">無</div>
+                    </div>
+                    <div class="bg-[#0d1117] p-3 rounded-xl border border-[#21262d] text-center">
+                        <div class="text-[11px] text-gray-400">☕ 平均單筆金額</div>
+                        <div id="anaAvgExpense" class="text-xs font-bold text-[#58a6ff] mt-1 font-mono">NT$ 0</div>
+                    </div>
+                    <div class="bg-[#0d1117] p-3 rounded-xl border border-[#21262d] text-center">
+                        <div class="text-[11px] text-gray-400">📊 行程記帳筆數</div>
+                        <div id="anaTotalCount" class="text-xs font-bold text-[#39d353] mt-1">0 筆</div>
+                    </div>
+                </div>
+
+                <!-- charts canvases -->
+                <div class="bg-[#0d1117] p-4 rounded-xl border border-[#21262d] space-y-2">
+                    <div class="text-xs text-[#58a6ff] font-bold text-center">🍣 消費類別比例分佈</div>
+                    <div class="relative h-44 w-full">
+                        <canvas id="categoryChartCanvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-[#0d1117] p-4 rounded-xl border border-[#21262d] space-y-2">
+                    <div class="text-xs text-[#58a6ff] font-bold text-center">💳 支付方式與代墊佔比</div>
+                    <div class="relative h-44 w-full">
+                        <canvas id="paymentChartCanvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-[#0d1117] p-4 rounded-xl border border-[#21262d] space-y-2">
+                    <div class="text-xs text-[#58a6ff] font-bold text-center">📈 每日消費趨勢變動 (台幣換算)</div>
+                    <div class="relative h-40 w-full">
+                        <canvas id="dailyChartCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-[#30363d]">
+                <button id="closeAnalysisModalFooterBtn" class="w-full bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-gray-300 font-semibold py-2.5 rounded-xl transition-colors cursor-pointer text-sm">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REUSABLE FLOATING CONTEXT MENU -->
+    <div id="longPressContextMenu" class="fixed hidden bg-[#1f242c] border border-[#30363d] rounded-xl shadow-2xl z-50 p-2 min-w-[130px] flex-col gap-1">
+        <button id="contextEditBtn" class="w-full text-left py-1.5 px-3 text-xs font-semibold text-gray-200 hover:bg-[#31363f] rounded-lg cursor-pointer">✏️ 編輯分類</button>
+        <button id="contextHideBtn" class="w-full text-left py-1.5 px-3 text-xs font-semibold text-red-400 hover:bg-[#31363f] rounded-lg cursor-pointer">🙈 隱藏分類</button>
+    </div>
+
+    <!-- FIREBASE & CORE ENGINE ES MODULE LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            signOut, 
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc, 
+            deleteDoc, 
+            onSnapshot, 
+            collection, 
+            serverTimestamp,
+            query,
+            where,
+            updateDoc,
+            arrayUnion
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        // Hardcoded developer fallback credentials
+        let firebaseConfig = {
+            projectId: "gen-lang-client-0974479125",
+            appId: "1:410344326840:web:a78a3e71c15d72d032964d",
+            apiKey: "AIzaSyBVECDH-BsDRZfCXFYl2G67o_TzogTqnGA",
+            authDomain: "gen-lang-client-0974479125.firebaseapp.com",
+            firestoreDatabaseId: "ai-studio-abd0cab6-2277-4029-99cc-6cf33ac039d0",
+            storageBucket: "gen-lang-client-0974479125.firebasestorage.app",
+            messagingSenderId: "410344326840"
+        };
+
+        let db = null;
+        let auth = null;
+        let provider = null;
+
+        // Target application references
+        let records = [];
+        let trips = [];
+        let selectedTripId = '';
+        let targetTripToJoin = null;
+
+        // Configuration local databases
+        let categories = [
+            { name: "美食飲料", emoji: "🍣", color: "#EA580C" },
+            { name: "衣服飾品", emoji: "👕", color: "#2563EB" },
+            { name: "當地住宿", emoji: "🏠", color: "#10B981" },
+            { name: "大眾運輸", emoji: "🚌", color: "#FFFFFF" },
+            { name: "門票費用", emoji: "🤿", color: "#0D9488" },
+            { name: "神社參拜", emoji: "⛩️", color: "#C83232" },
+            { name: "紀念品", emoji: "🗾", color: "#7878FF" },
+            { name: "伴手禮", emoji: "🎁", color: "#F0A30A" },
+            { name: "我哪知道", emoji: "🤷", color: "#4B5563" },
+            { name: "去程機票", emoji: "✈️", color: "#388BFD" },
+            { name: "回程機票", emoji: "✈️", color: "#388BFD" }
+        ];
+        let hiddenCategories = [];
+        let editingCategory = null;
+
+        // Current application state
+        let exchangeRate = 0.2;
+        let selectedCategory = '';
+        let selectedPayer = '';
+        let selectedCard = '';
+        let selectedCurrency = 'JPY';
+        let editingExpenseId = null;
+        let activeRecord = null; // for details modal
+
+        // Realtime unsubscribe handle
+        let unsubTrips = null;
+        let unsubExpenses = null;
+
+        // Charts handles
+        let categoryChartInst = null;
+        let paymentChartInst = null;
+        let dailyChartInst = null;
+
+        // --- DOM Elements selectors ---
+        const s = {
+            loading: document.getElementById('loadingScreen'),
+            login: document.getElementById('loginScreen'),
+            unauth: document.getElementById('unauthorizedScreen'),
+            unauthEmail: document.getElementById('unauthorizedEmail'),
+            app: document.getElementById('appContainer'),
+            googleLoginBtn: document.getElementById('googleLoginBtn'),
+            unauthLogoutBtn: document.getElementById('unauthLogoutBtn'),
+            authLogoutBtn: document.getElementById('authLogoutBtn'),
+            userAvatar: document.getElementById('userAvatar'),
+            userName: document.getElementById('userName'),
+            userEmail: document.getElementById('userEmail'),
+            
+            tripSelector: document.getElementById('tripSelector'),
+            openCreateTripModalBtn: document.getElementById('openCreateTripModalBtn'),
+            copyTripLinkBtn: document.getElementById('copyTripLinkBtn'),
+            joinTripBlock: document.getElementById('joinTripBlock'),
+            unjoinedTripName: document.getElementById('unjoinedTripName'),
+            joinTripBtn: document.getElementById('joinTripBtn'),
+
+            exchangeRateInput: document.getElementById('exchangeRateInput'),
+            dashboardOverallTotalTwd: document.getElementById('dashboardOverallTotalTwd'),
+            overallJpySum: document.getElementById('overallJpySum'),
+            overallTwdSum: document.getElementById('overallTwdSum'),
+            dashboardTotalJpy: document.getElementById('dashboardTotalJpy'),
+            dashboardTotalTwd: document.getElementById('dashboardTotalTwd'),
+            dbSubJpy: document.getElementById('dbSubJpy'),
+            dbSubTwd: document.getElementById('dbSubTwd'),
+            overallTotalCard: document.getElementById('overallTotalCard'),
+
+            expenseForm: document.getElementById('expenseForm'),
+            itemInput: document.getElementById('itemInput'),
+            currencyButtons: document.querySelectorAll('#currencyButtonContainer button'),
+            amountInput: document.getElementById('amountInput'),
+            categoryButtonContainer: document.getElementById('categoryButtonContainer'),
+            addNewCategoryBtn: document.getElementById('addNewCategoryBtn'),
+            manageCategoriesBtn: document.getElementById('manageCategoriesBtn'),
+            payerButtons: document.querySelectorAll('#payerButtonContainer button'),
+            cardTypeContainer: document.getElementById('cardTypeContainer'),
+            cardButtons: document.querySelectorAll('#cardButtonContainer button'),
+            timestampInput: document.getElementById('timestampInput'),
+            submitButtonText: document.getElementById('submitButtonText'),
+            cancelEditBtn: document.getElementById('cancelEditBtn'),
+
+            recordList: document.getElementById('recordList'),
+            importCsvBtn: document.getElementById('importCsvBtn'),
+            exportCsvBtn: document.getElementById('exportCsvBtn'),
+            csvFileInput: document.getElementById('csvFileInput'),
+
+            // Modals
+            createTripModal: document.getElementById('createTripModal'),
+            newTripNameInput: document.getElementById('newTripNameInput'),
+            saveTripBtn: document.getElementById('saveTripBtn'),
+            closeCreateTripModalBtn: document.getElementById('closeCreateTripModalBtn'),
+            cancelCreateTripModalBtn: document.getElementById('cancelCreateTripModalBtn'),
+
+            addCategoryModal: document.getElementById('addCategoryModal'),
+            closeCategoryModalBtn: document.getElementById('closeCategoryModalBtn'),
+            categoryModalTitle: document.getElementById('categoryModalTitle'),
+            newCategoryEmoji: document.getElementById('newCategoryEmoji'),
+            newCategoryName: document.getElementById('newCategoryName'),
+            newCategoryColor: document.getElementById('newCategoryColor'),
+            colorPreview: document.getElementById('colorPreview'),
+            saveCategoryBtn: document.getElementById('saveCategoryBtn'),
+            hiddenCategoriesList: document.getElementById('hiddenCategoriesList'),
+            closeCategoryModalFooterBtn: document.getElementById('closeCategoryModalFooterBtn'),
+
+            recordModal: document.getElementById('recordModal'),
+            closeRecordModalBtn: document.getElementById('closeRecordModalBtn'),
+            modalContent: document.getElementById('modalContent'),
+            editRecordBtn: document.getElementById('editRecordBtn'),
+            deleteRecordBtn: document.getElementById('deleteRecordBtn'),
+            closeRecordModalFooterBtn: document.getElementById('closeRecordModalFooterBtn'),
+
+            analysisModal: document.getElementById('analysisModal'),
+            closeAnalysisModalIconBtn: document.getElementById('closeAnalysisModalIconBtn'),
+            closeAnalysisModalFooterBtn: document.getElementById('closeAnalysisModalFooterBtn'),
+            anaMaxExpense: document.getElementById('anaMaxExpense'),
+            anaTopCategory: document.getElementById('anaTopCategory'),
+            anaAvgExpense: document.getElementById('anaAvgExpense'),
+            anaTotalCount: document.getElementById('anaTotalCount'),
+
+            longPressContextMenu: document.getElementById('longPressContextMenu'),
+            contextEditBtn: document.getElementById('contextEditBtn'),
+            contextHideBtn: document.getElementById('contextHideBtn'),
+            confettiContainer: document.getElementById('confettiContainer'),
+            flashNotice: document.getElementById('flashNotice'),
+            flashText: document.getElementById('flashText')
+        };
+
+        // --- Helper mechanics ---
+        const haptic = (ms = 15) => {
+            if (navigator.vibrate) navigator.vibrate(ms);
+        };
+
+        const showFlash = (text, isError = false) => {
+            s.flashText.textContent = text;
+            s.flashNotice.className = `fixed top-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-50 p-4 border rounded-xl shadow-2xl flex items-start gap-2 backdrop-blur-md transition-all duration-350 opacity-100 translate-y-0 ${
+                isError ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-[#1f6feb]/10 border-[#388bfd]/30 text-[#58a6ff]'
+            }`;
+            setTimeout(() => {
+                s.flashNotice.classList.add('opacity-0');
+                s.flashNotice.classList.add('translate-y-[-20px]');
+            }, 3500);
+        };
+
+        const throwConfetti = () => {
+            const colors = ['#58a6ff', '#388bfd', '#1f6feb', '#2ea043', '#f2cc60'];
+            for (let i = 0; i < 40; i++) {
+                const el = document.createElement('div');
+                el.className = 'confetti';
+                el.style.left = `${Math.random() * 100}%`;
+                el.style.top = `-20px`;
+                el.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                el.style.width = `${Math.random() * 7 + 4}px`;
+                el.style.height = `${Math.random() * 7 + 4}px`;
+                el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                el.style.animation = `fall ${Math.random() * 2 + 1.5}s linear ${Math.random() * 0.5}s forwards`;
+                s.confettiContainer.appendChild(el);
+                setTimeout(() => el.remove(), 3500);
+            }
+        };
+
+        const openModal = (m) => {
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+            haptic(10);
+        };
+
+        const closeModal = (m) => {
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        };
+
+        const getFormattedCurrentTime = () => {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        };
+
+        // --- Preferences and preferences loading ---
+        const loadPreferences = () => {
+            const rate = localStorage.getItem('exchangeRate');
+            if (rate) {
+                exchangeRate = parseFloat(rate);
+                s.exchangeRateInput.value = rate;
+            }
+            const localCats = localStorage.getItem('categories');
+            if (localCats) categories = JSON.parse(localCats);
+
+            const localHidden = localStorage.getItem('hiddenCategories');
+            if (localHidden) hiddenCategories = JSON.parse(localHidden);
+
+            s.timestampInput.value = getFormattedCurrentTime();
+        };
+
+        // Screen switching machine
+        const showScreen = (id) => {
+            s.loading.classList.add('hidden');
+            s.login.classList.add('hidden');
+            s.unauth.classList.add('hidden');
+            s.app.classList.add('hidden');
+
+            if (id === 'loading') s.loading.classList.remove('hidden');
+            else if (id === 'login') s.login.classList.remove('hidden');
+            else if (id === 'unauth') s.unauth.classList.remove('hidden');
+            else if (id === 'app') s.app.classList.remove('hidden');
+        };
+
+
+
+        // Auth listeners
+        s.googleLoginBtn.addEventListener('click', async () => {
+            try {
+                showScreen('loading');
+                await signInWithPopup(auth, provider);
+                throwConfetti();
+            } catch (err) {
+                showFlash(`登入失敗: ${err.message}`, true);
+                showScreen('login');
+            }
+        });
+
+        const triggerLogout = async () => {
+            try {
+                showScreen('loading');
+                await signOut(auth);
+            } catch (err) {
+                console.error(err);
+                showScreen('app');
+            }
+        };
+
+        s.unauthLogoutBtn.addEventListener('click', triggerLogout);
+        s.authLogoutBtn.addEventListener('click', triggerLogout);
+
+        // --- Trips sync routines ---
+        const syncTrips = async () => {
+            const currentUser = auth.currentUser;
+            if (!currentUser) return;
+
+            if (unsubTrips) unsubTrips();
+
+            const tripsCol = collection(db, 'trips');
+            const q = query(tripsCol, where('members', 'array-contains', currentUser.uid));
+
+            unsubTrips = onSnapshot(q, async (snap) => {
+                const list = [];
+                snap.forEach(docSnap => {
+                    list.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                list.sort((a, b) => b.id.localeCompare(a.id));
+                trips = list;
+
+                // Render dynamic trips dropdown option lines
+                s.tripSelector.innerHTML = '';
+                if (trips.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = '❌ 請點右側按鈕建立新群組';
+                    opt.disabled = true;
+                    opt.selected = true;
+                    s.tripSelector.appendChild(opt);
+                    stopRealtimeSync();
+                    records = [];
+                    renderRecordsAndStats();
+                    return;
+                }
+
+                trips.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.textContent = t.name;
+                    s.tripSelector.appendChild(opt);
+                });
+
+                // Read trip ID parameters
+                const params = new URLSearchParams(window.location.search);
+                const urlId = params.get('trip');
+
+                let nextSelectId = '';
+                if (urlId) {
+                    const activeIndex = trips.some(t => t.id === urlId);
+                    if (activeIndex) {
+                        nextSelectId = urlId;
+                        s.joinTripBlock.classList.add('hidden');
+                        targetTripToJoin = null;
+                    } else {
+                        // Check if invite exists
+                        try {
+                            const invitationSnap = await getDoc(doc(db, 'trips', urlId));
+                            if (invitationSnap.exists()) {
+                                targetTripToJoin = { id: invitationSnap.id, ...invitationSnap.data() };
+                                s.unjoinedTripName.textContent = targetTripToJoin.name;
+                                s.joinTripBlock.classList.remove('hidden');
+                            } else {
+                                showFlash('未找到指定旅程 ❌', true);
+                            }
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                }
+
+                if (!nextSelectId) {
+                    const localSelectId = localStorage.getItem('selectedTripId');
+                    if (localSelectId && trips.some(t => t.id === localSelectId)) {
+                        nextSelectId = localSelectId;
+                    } else if (trips.length > 0) {
+                        nextSelectId = trips[0].id;
+                    }
+                }
+
+                if (nextSelectId) {
+                    selectedTripId = nextSelectId;
+                    s.tripSelector.value = nextSelectId;
+                    localStorage.setItem('selectedTripId', nextSelectId);
+                    startReltimeSyncExpenses();
+                }
+            });
+        };
+
+        // Selector shifts on Trip changed
+        s.tripSelector.addEventListener('change', (e) => {
+            const nextVal = e.target.value;
+            selectedTripId = nextVal;
+            localStorage.setItem('selectedTripId', nextVal);
+            
+            // Rewrite local share paths in document url
+            const newUrl = `${window.location.origin}${window.location.pathname}?trip=${nextVal}`;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+
+            s.joinTripBlock.classList.add('hidden');
+            targetTripToJoin = null;
+
+            haptic(10);
+            startReltimeSyncExpenses();
+        });
+
+        // Join Shared Group
+        s.joinTripBtn.addEventListener('click', async () => {
+            const currentUser = auth.currentUser;
+            if (!currentUser || !targetTripToJoin) return;
+
+            try {
+                s.joinTripBtn.disabled = true;
+                await updateDoc(doc(db, 'trips', targetTripToJoin.id), {
+                    members: arrayUnion(currentUser.uid)
+                });
+
+                showFlash(`成功加入旅伴群「${targetTripToJoin.name}」！🎉`, false);
+                throwConfetti();
+                haptic(30);
+
+                selectedTripId = targetTripToJoin.id;
+                localStorage.setItem('selectedTripId', targetTripToJoin.id);
+                s.joinTripBlock.classList.add('hidden');
+                targetTripToJoin = null;
+
+                const newUrl = `${window.location.origin}${window.location.pathname}?trip=${selectedTripId}`;
+                window.history.pushState({ path: newUrl }, '', newUrl);
+                
+                await syncTrips();
+            } catch (err) {
+                showFlash('加入旅伴遭遇限制', true);
+            } finally {
+                s.joinTripBtn.disabled = false;
+            }
+        });
+
+        // Create new trip logic
+        s.openCreateTripModalBtn.addEventListener('click', () => {
+            s.newTripNameInput.value = '';
+            openModal(s.createTripModal);
+        });
+        s.closeCreateTripModalBtn.addEventListener('click', () => closeModal(s.createTripModal));
+        s.cancelCreateTripModalBtn.addEventListener('click', () => closeModal(s.createTripModal));
+        
+        s.saveTripBtn.addEventListener('click', async () => {
+            const currentUser = auth.currentUser;
+            const name = s.newTripNameInput.value.trim();
+            if (!currentUser || !name) return;
+
+            try {
+                s.saveTripBtn.disabled = true;
+                const tripId = `TRIP-${Date.now()}-${Math.random().toString(36).substring(2,7).toUpperCase()}`;
+                
+                await setDoc(doc(db, 'trips', tripId), {
+                    id: tripId,
+                    name: name,
+                    members: [currentUser.uid],
+                    createdAt: new Date().toISOString()
+                });
+
+                showFlash(`成功創立新旅行群組：${name}！`, false);
+                throwConfetti();
+                haptic(30);
+
+                selectedTripId = tripId;
+                localStorage.setItem('selectedTripId', tripId);
+                closeModal(s.createTripModal);
+
+                const newUrl = `${window.location.origin}${window.location.pathname}?trip=${tripId}`;
+                window.history.pushState({ path: newUrl }, '', newUrl);
+
+                await syncTrips();
+            } catch (err) {
+                showFlash('旅程開闢失敗', true);
+            } finally {
+                s.saveTripBtn.disabled = false;
+            }
+        });
+
+        s.copyTripLinkBtn.addEventListener('click', () => {
+            if (!selectedTripId) return;
+            const shareUrl = `${window.location.origin}${window.location.pathname}?trip=${selectedTripId}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showFlash('分享連結已儲存剪貼簿！可直接分享給其他旅伴加入共同記帳 📎', false);
+                haptic(20);
+            }).catch(() => {
+                showFlash(`連結路徑: ${shareUrl}`, false);
+            });
+        });
+
+        // --- Real-time snapshot listening for expenses ---
+        const startReltimeSyncExpenses = () => {
+            if (unsubExpenses) unsubExpenses();
+
+            if (!selectedTripId) {
+                records = [];
+                renderRecordsAndStats();
+                return;
+            }
+
+            const expensesCol = collection(db, 'trips', selectedTripId, 'expenses');
+            unsubExpenses = onSnapshot(expensesCol, (snap) => {
+                const list = [];
+                snap.forEach(docSnap => {
+                    list.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                list.sort((a,b) => b.date.localeCompare(a.date));
+                records = list;
+
+                renderRecordsAndStats();
+            }, (error) => {
+                if (error.code !== 'permission-denied') {
+                    showFlash(`即時同步失敗：${error.message}`, true);
+                }
+            });
+        };
+
+        const stopRealtimeSync = () => {
+            if (unsubTrips) { unsubTrips(); unsubTrips = null; }
+            if (unsubExpenses) { unsubExpenses(); unsubExpenses = null; }
+        };
+
+        // --- Form Event Bindings and rendering managers ---
+        const renderCategoryButtonsInApp = () => {
+            s.categoryButtonContainer.innerHTML = '';
+            const activeLst = categories.filter(c => !hiddenCategories.includes(c.name));
+
+            activeLst.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.dataset.category = cat.name;
+                btn.className = `py-1.5 px-3 rounded-lg text-xs font-bold border flex items-center gap-1.5 select-none transition-all cursor-pointer ${
+                    selectedCategory === cat.name 
+                        ? 'bg-gradient-to-r from-[#1f6feb] to-[#388bfd] text-white border-blue-400 shadow-md'
+                        : 'bg-[#161b22] border-[#30363d] text-slate-400 hover:text-white'
+                }`;
+                btn.innerHTML = `<span>${cat.emoji}</span><span>${cat.name}</span>`;
+
+                // Handle click for selection
+                btn.addEventListener('click', () => {
+                    if (selectedCategory === cat.name) {
+                        selectedCategory = '';
+                        btn.className = 'py-1.5 px-3 rounded-lg text-xs font-bold border flex items-center gap-1.5 select-none transition-all cursor-pointer bg-[#161b22] border-[#30363d] text-slate-400 hover:text-white';
+                    } else {
+                        selectedCategory = cat.name;
+                        haptic(10);
+                        renderCategoryButtonsInApp();
+                    }
+                });
+
+                // Long press event for context trigger menu
+                let lTimer;
+                const onLongPress = (e) => {
+                    e.preventDefault();
+                    editingCategory = cat;
+                    haptic(45);
+
+                    // Show custom menu at long pressed location
+                    const rect = btn.getBoundingClientRect();
+                    s.longPressContextMenu.style.top = `${rect.bottom + window.scrollY + 4}px`;
+                    s.longPressContextMenu.style.left = `${Math.min(rect.left + window.scrollX, window.innerWidth - 150)}px`;
+                    s.longPressContextMenu.classList.remove('hidden');
+                    s.longPressContextMenu.classList.add('flex');
+                };
+
+                btn.addEventListener('contextmenu', onLongPress);
+                btn.addEventListener('touchstart', (e) => {
+                    lTimer = setTimeout(() => onLongPress(e), 650);
+                });
+                btn.addEventListener('touchend', () => clearTimeout(lTimer));
+                btn.addEventListener('touchmove', () => clearTimeout(lTimer));
+
+                s.categoryButtonContainer.appendChild(btn);
+            });
+        };
+
+        // Dismiss context menu clicks safely
+        document.addEventListener('click', (e) => {
+            if (!s.longPressContextMenu.contains(e.target)) {
+                s.longPressContextMenu.classList.add('hidden');
+                s.longPressContextMenu.classList.remove('flex');
+            }
+        });
+
+        // Hide/Edit triggers from context menu
+        s.contextHideBtn.addEventListener('click', () => {
+            if (!editingCategory) return;
+            const targetName = editingCategory.name;
+            if (window.confirm(`確認要隱藏「${targetName}」分類圖章嗎？(您可以在管理面盤將其恢復)`)) {
+                hiddenCategories.push(targetName);
+                localStorage.setItem('hiddenCategories', JSON.stringify(hiddenCategories));
+                renderCategoryButtonsInApp();
+                showFlash(`分類「${targetName}」已加入隱藏欄。`, false);
+            }
+            s.longPressContextMenu.classList.add('hidden');
+        });
+
+        s.contextEditBtn.addEventListener('click', () => {
+            if (!editingCategory) return;
+            s.categoryModalTitle.textContent = '✏️ 修改分類項目';
+            s.saveCategoryBtn.textContent = '儲存變更';
+            s.newCategoryEmoji.value = editingCategory.emoji;
+            s.newCategoryName.value = editingCategory.name;
+            s.newCategoryColor.value = editingCategory.color;
+            s.colorPreview.style.backgroundColor = editingCategory.color;
+
+            s.longPressContextMenu.classList.add('hidden');
+            renderHiddenCategoriesList();
+            openModal(s.addCategoryModal);
+        });
+
+        // Dynamic categories management
+        s.addNewCategoryBtn.addEventListener('click', () => {
+            editingCategory = null;
+            s.categoryModalTitle.textContent = '🍣 新增/管理分類項目';
+            s.saveCategoryBtn.textContent = '新增分類';
+            s.newCategoryEmoji.value = '';
+            s.newCategoryName.value = '';
+            s.newCategoryColor.value = '#3B82F6';
+            s.colorPreview.style.backgroundColor = '#3B82F6';
+
+            renderHiddenCategoriesList();
+            openModal(s.addCategoryModal);
+        });
+
+        s.manageCategoriesBtn.addEventListener('click', () => {
+            editingCategory = null;
+            s.categoryModalTitle.textContent = '🍣 新增/管理分類項目';
+            s.saveCategoryBtn.textContent = '新增分類';
+            s.newCategoryEmoji.value = '';
+            s.newCategoryName.value = '';
+            s.newCategoryColor.value = '#3B82F6';
+            s.colorPreview.style.backgroundColor = '#3B82F6';
+
+            renderHiddenCategoriesList();
+            openModal(s.addCategoryModal);
+        });
+
+        s.closeCategoryModalBtn.addEventListener('click', () => closeModal(s.addCategoryModal));
+        s.closeCategoryModalFooterBtn.addEventListener('click', () => closeModal(s.addCategoryModal));
+
+        s.newCategoryColor.addEventListener('input', (e) => {
+            s.colorPreview.style.backgroundColor = e.target.value;
+        });
+
+        const renderHiddenCategoriesList = () => {
+            s.hiddenCategoriesList.innerHTML = '';
+            const hiddenObjs = categories.filter(c => hiddenCategories.includes(c.name));
+
+            if (hiddenObjs.length === 0) {
+                s.hiddenCategoriesList.innerHTML = `<li class="text-center py-4 text-xs text-gray-500 italic">無隱藏的分類</li>`;
+                return;
+            }
+
+            hiddenObjs.forEach(cat => {
+                const li = document.createElement('li');
+                li.className = "flex justify-between items-center p-2 text-xs border-b border-[#21262d] last:border-b-0";
+                li.innerHTML = `
+                    <span class="text-gray-300 flex items-center gap-1.5 font-bold">
+                        <span class="inline-block px-1.5 py-0.5 rounded-md" style="background: ${cat.color}22; border: 1px solid ${cat.color}">
+                            ${cat.emoji}
+                        </span>
+                        <span>${cat.name}</span>
+                    </span>
+                    <div class="flex gap-1.5">
+                        <button type="button" class="bg-[#21262d] hover:bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 py-1 px-2.5 rounded-lg transition-colors cursor-pointer text-[11px] font-bold btn-edit-hidden">修改</button>
+                        <button type="button" class="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 py-1 px-2.5 rounded-lg transition-colors cursor-pointer text-[11px] font-bold btn-unhide-hidden">還原顯示</button>
+                    </div>
+                `;
+
+                // Add button listeners
+                li.querySelector('.btn-edit-hidden').addEventListener('click', () => {
+                    editingCategory = cat;
+                    s.categoryModalTitle.textContent = '✏️ 修改分類項目';
+                    s.saveCategoryBtn.textContent = '儲存變更';
+                    s.newCategoryEmoji.value = cat.emoji;
+                    s.newCategoryName.value = cat.name;
+                    s.newCategoryColor.value = cat.color;
+                    s.colorPreview.style.backgroundColor = cat.color;
+                });
+
+                li.querySelector('.btn-unhide-hidden').addEventListener('click', () => {
+                    hiddenCategories = hiddenCategories.filter(n => n !== cat.name);
+                    localStorage.setItem('hiddenCategories', JSON.stringify(hiddenCategories));
+                    renderHiddenCategoriesList();
+                    renderCategoryButtonsInApp();
+                    showFlash(`已還原設定：分類「${cat.name}」恢復顯示！`, false);
+                    haptic(10);
+                });
+
+                s.hiddenCategoriesList.appendChild(li);
+            });
+        };
+
+        s.saveCategoryBtn.addEventListener('click', () => {
+            const emojiVal = s.newCategoryEmoji.value.trim();
+            const nameVal = s.newCategoryName.value.trim();
+            const colorVal = s.newCategoryColor.value;
+
+            if (!emojiVal || !nameVal || !colorVal) {
+                showFlash('請完整填寫項目 (符號、名稱和顏色)！', true);
+                return;
+            }
+
+            let updated;
+            if (editingCategory) {
+                const oldName = editingCategory.name;
+                updated = categories.map(c => c.name === oldName ? { name: nameVal, emoji: emojiVal, color: colorVal } : c);
+                
+                if (oldName !== nameVal) {
+                    const idx = hiddenCategories.indexOf(oldName);
+                    if (idx > -1) {
+                        hiddenCategories[idx] = nameVal;
+                        localStorage.setItem('hiddenCategories', JSON.stringify(hiddenCategories));
+                    }
+                }
+                showFlash(`編輯分類項目「${nameVal}」成功 ✨`, false);
+            } else {
+                if (categories.some(c => c.name === nameVal)) {
+                    showFlash('此分類項目名稱已存在！', true);
+                    return;
+                }
+                updated = [...categories, { name: nameVal, emoji: emojiVal, color: colorVal }];
+                showFlash(`成功建立新分類： ${emojiVal} ${nameVal} 🍣`, false);
+            }
+
+            categories = updated;
+            localStorage.setItem('categories', JSON.stringify(updated));
+            editingCategory = null;
+            
+            renderCategoryButtonsInApp();
+            closeModal(s.addCategoryModal);
+        });
+
+        // Form fast selector button toggles
+        s.currencyButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                s.currencyButtons.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedCurrency = btn.dataset.currency;
+                haptic(10);
+            });
+        });
+
+        s.payerButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const alreadySelected = btn.classList.contains('selected');
+                s.payerButtons.forEach(b => b.classList.remove('selected'));
+                s.cardButtons.forEach(b => b.classList.remove('selected'));
+                selectedCard = '';
+
+                if (alreadySelected) {
+                    selectedPayer = '';
+                    s.cardTypeContainer.classList.add('hidden');
+                } else {
+                    selectedPayer = btn.dataset.payer;
+                    btn.classList.add('selected');
+                    haptic(10);
+                    if (selectedPayer === '震' || selectedPayer === '沛') {
+                        s.cardTypeContainer.classList.remove('hidden');
+                    } else {
+                        s.cardTypeContainer.classList.add('hidden');
+                    }
+                }
+            });
+        });
+
+        s.cardButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const isSel = btn.classList.contains('selected');
+                s.cardButtons.forEach(b => b.classList.remove('selected'));
+
+                if (isSel) {
+                    selectedCard = '';
+                } else {
+                    selectedCard = btn.dataset.card;
+                    btn.classList.add('selected');
+                    haptic(10);
+                }
+            });
+        });
+
+        // --- Stats calculations and lists binding ---
+        const renderRecordsAndStats = () => {
+            let totalJpy = 0;
+            let totalTwd = 0;
+            let jz = 0, jp = 0, jc = 0;
+            let tz = 0, tp = 0, tc = 0;
+
+            records.forEach(r => {
+                if (r.paymentMethod === '交通卡') return;
+                const amt = Number(r.amount) || 0;
+
+                if (r.currency === 'JPY') {
+                    totalJpy += amt;
+                    if (r.paymentMethod === '震') jz += amt;
+                    if (r.paymentMethod === '沛') jp += amt;
+                    if (r.paymentMethod === '現金') jc += amt;
+                } else {
+                    totalTwd += amt;
+                    if (r.paymentMethod === '震') tz += amt;
+                    if (r.paymentMethod === '沛') tp += amt;
+                    if (r.paymentMethod === '現金') tc += amt;
+                }
+            });
+
+            const overallConvertedTwd = Math.round((totalJpy * exchangeRate) + totalTwd);
+
+            // Print stats displays safely
+            s.dashboardOverallTotalTwd.textContent = `NT$ ${overallConvertedTwd.toLocaleString()}`;
+            s.overallJpySum.textContent = `日幣總計: ¥${totalJpy.toLocaleString()}`;
+            s.overallTwdSum.textContent = `台幣總計: $${totalTwd.toLocaleString()}`;
+
+            s.dashboardTotalJpy.textContent = `¥${totalJpy.toLocaleString()}`;
+            s.dashboardTotalTwd.textContent = `$${totalTwd.toLocaleString()}`;
+
+            s.dbSubJpy.innerHTML = `<div class="flex justify-between font-mono"><span>震付:</span><span>¥${jz.toLocaleString()}</span></div>
+                                    <div class="flex justify-between font-mono"><span>沛付:</span><span>¥${jp.toLocaleString()}</span></div>
+                                    <div class="flex justify-between font-mono"><span>現金:</span><span>¥${jc.toLocaleString()}</span></div>`;
+
+            s.dbSubTwd.innerHTML = `<div class="flex justify-between font-mono"><span>震付:</span><span>NT$${tz.toLocaleString()}</span></div>
+                                    <div class="flex justify-between font-mono"><span>沛付:</span><span>NT$${tp.toLocaleString()}</span></div>
+                                    <div class="flex justify-between font-mono"><span>現金:</span><span>NT$${tc.toLocaleString()}</span></div>`;
+
+
+            // Render dynamic scroll records list log boxes
+            s.recordList.innerHTML = '';
+            if (records.length === 0) {
+                s.recordList.innerHTML = `<div class="text-center text-slate-500 py-12 text-xs italic">🌴 目前無雲端消費紀錄。快來記第一筆帳吧！</div>`;
+                return;
+            }
+
+            records.forEach((record, index) => {
+                const itemEl = document.createElement('div');
+                itemEl.className = "flex items-center justify-between py-3 px-1 hover:bg-[#1a1f29]/40 active:bg-blue-900/5 transition-colors cursor-pointer summary-item relative overflow-hidden group";
+                itemEl.style.animationDelay = `${index * 0.015}s`;
+
+                const recDate = new Date(record.date);
+                const showDate = isNaN(recDate.getTime()) ? record.date.slice(5, 10).replace('-', '/') : `${recDate.getMonth() + 1}/${recDate.getDate()}`;
+                const showTime = isNaN(recDate.getTime()) ? record.date.slice(11, 16) : `${String(recDate.getHours()).padStart(2, '0')}:${String(recDate.getMinutes()).padStart(2, '0')}`;
+
+                const curSymbol = record.currency === 'JPY' ? '¥' : '$';
+                const formattedAmt = `${curSymbol}${Number(record.amount || 0).toLocaleString()}`;
+                
+                const catDef = categories.find(c => c.name === record.category) || { emoji: '🤷', color: '#4B5563' };
+                const userAlias = record.userEmail ? record.userEmail.split('@')[0] : '未知';
+
+                itemEl.innerHTML = `
+                    <div class="flex items-center gap-3 relative z-10">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow" style="background: ${catDef.color}1c; border: 1px solid ${catDef.color}">
+                            ${catDef.emoji}
+                        </div>
+                        <div class="overflow-hidden">
+                            <span class="block font-bold text-white text-sm truncate max-w-[170px] group-hover:text-blue-400 transition-colors">${record.title}</span>
+                            <span class="block text-[10px] text-slate-500 font-mono mt-0.5 truncate">
+                                👤 ${record.paymentMethod} ${record.cardName ? `• ${record.cardName}` : ''} • <strong class="text-gray-400 capitalize">${userAlias}</strong>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-right flex-shrink-0 relative z-10 font-mono">
+                        <span class="block text-sm font-black text-white">${formattedAmt}</span>
+                        ${record.currency === 'JPY' ? `
+                            <span class="block text-[10px] text-emerald-400 font-bold mt-0.5">≈ NT$ ${Math.round(record.amount * exchangeRate).toLocaleString()}</span>
+                        ` : ''}
+                        <span class="block text-[9px] text-[#484f58] mt-1">${showDate} ${showTime}</span>
+                    </div>
+
+                    <!-- Ambient Categorized Category Name overlay background -->
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 text-[26px] font-extrabold font-sans text-white/2 opacity-[0.02] select-none pointer-events-none group-hover:opacity-[0.05] transition-opacity uppercase">
+                        ${record.category}
+                    </div>
+                `;
+
+                // Add detail poptrigger click listener
+                itemEl.addEventListener('click', () => {
+                    activeRecord = record;
+                    const rDate = new Date(record.date);
+                    
+                    s.modalContent.innerHTML = `
+                        <div class="flex flex-col gap-2.5 font-sans">
+                            <div class="flex justify-between py-1 border-b border-[#161b22]"><span class="text-gray-500">消費項目:</span><span class="font-bold text-white max-w-[190px] text-right break-all">${record.title}</span></div>
+                            <div class="flex justify-between py-1 border-b border-[#161b22]"><span class="text-gray-500">分類標籤:</span><span class="font-bold text-white">${record.category}</span></div>
+                            <div class="flex justify-between py-1 border-b border-[#161b22]"><span class="text-gray-500">金額幣值:</span><span class="font-black text-[#58a6ff] text-base">${curSymbol}${Number(record.amount).toLocaleString()}</span></div>
+                            ${record.currency === 'JPY' ? `
+                                <div class="flex justify-between py-1 border-b border-[#161b22]"><span class="text-gray-500">台幣折估:</span><span class="font-bold text-emerald-400 font-mono">≈ NT$ ${Math.round(record.amount * exchangeRate).toLocaleString()}</span></div>
+                            ` : ''}
+                            <div class="flex justify-between py-1 border-b border-[#161b22]"><span class="text-gray-500">支付方式:</span><span class="font-bold text-white">${record.paymentMethod} ${record.cardName ? `(${record.cardName})` : ''}</span></div>
+                            <div class="flex justify-between py-1 border-b border-[#161b22]"><span class="text-gray-500">消費時間:</span><span class="font-bold text-white">${isNaN(rDate.getTime()) ? record.date : rDate.toLocaleString()}</span></div>
+                            <div class="flex justify-between py-1 text-xs text-gray-500 font-mono mt-2 pt-2 border-t border-[#21262d]"><span>同步帳號:</span><span>${record.userEmail || '未知'}</span></div>
+                        </div>
+                    `;
+                    openModal(s.recordModal);
+                });
+
+                s.recordList.appendChild(itemEl);
+            });
+        };
+
+        // --- Add/Edit Form Actions ---
+        s.expenseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const currentUser = auth.currentUser;
+            if (!currentUser || !selectedTripId) {
+                showFlash('非法的對應代墊旅別群組 ❌', true);
+                return;
+            }
+
+            const title = s.itemInput.value.trim();
+            const valAmt = parseFloat(s.amountInput.value);
+
+            if (!title || isNaN(valAmt) || valAmt <= 0 || !selectedCategory || !selectedPayer) {
+                showFlash('請完整登記項目、金額、分類和代墊！ ⚠️', true);
+                haptic(35);
+                return;
+            }
+
+            s.submitButtonText.textContent = '進行雲端同步中...';
+            document.getElementById('submitButton').disabled = true;
+
+            const expenseId = editingExpenseId || `EXP-${Date.now()}-${Math.random().toString(36).substring(2,7).toUpperCase()}`;
+
+            const expensePayload = {
+                id: expenseId,
+                title,
+                amount: valAmt,
+                currency: selectedCurrency,
+                category: selectedCategory,
+                paymentMethod: selectedPayer,
+                cardName: (selectedPayer === '震' || selectedPayer === '沛') ? (selectedCard || '其他') : null,
+                date: s.timestampInput.value || new Date().toISOString(),
+                userId: currentUser.uid,
+                userEmail: currentUser.email || 'unknown@domain.com'
+            };
+
+            const ref = doc(db, 'trips', selectedTripId, 'expenses', expenseId);
+
+            try {
+                if (editingExpenseId) {
+                    const snap = await getDoc(ref);
+                    if (snap.exists()) {
+                        const orig = snap.data();
+                        expensePayload.createdAt = orig.createdAt || serverTimestamp();
+                        expensePayload.userId = orig.userId;
+                        expensePayload.userEmail = orig.userEmail;
+                    }
+                } else {
+                    expensePayload.createdAt = serverTimestamp();
+                }
+
+                await setDoc(ref, expensePayload);
+                showFlash(editingExpenseId ? '代墊消費數據修改成功 ✨' : '雲端記帳成功！💰', false);
+                throwConfetti();
+                haptic(30);
+
+                // Reset
+                handleResetAllFormFields();
+            } catch (err) {
+                showFlash(`資料儲存異常：${err.message}`, true);
+            } finally {
+                s.submitButtonText.textContent = '送出儲存至雲端';
+                document.getElementById('submitButton').disabled = false;
+            }
+        });
+
+        const handleResetAllFormFields = () => {
+            s.expenseForm.reset();
+            s.timestampInput.value = getFormattedCurrentTime();
+            selectedCategory = '';
+            selectedPayer = '';
+            selectedCard = '';
+            editingExpenseId = null;
+
+            s.payerButtons.forEach(b => b.classList.remove('selected'));
+            s.cardButtons.forEach(b => b.classList.remove('selected'));
+            s.cardTypeContainer.classList.add('hidden');
+            s.cancelEditBtn.classList.add('hidden');
+            s.submitButtonText.textContent = '送出儲存至雲端';
+
+            s.currencyButtons.forEach(b => b.classList.remove('selected'));
+            document.querySelector('[data-currency="JPY"]').classList.add('selected');
+            selectedCurrency = 'JPY';
+            
+            renderCategoryButtonsInApp();
+        };
+
+        s.cancelEditBtn.addEventListener('click', handleResetAllFormFields);
+
+        // Edit/Delete trigger bindings
+        s.closeRecordModalBtn.addEventListener('click', () => closeModal(s.recordModal));
+        s.closeRecordModalFooterBtn.addEventListener('click', () => closeModal(s.recordModal));
+
+        s.editRecordBtn.addEventListener('click', () => {
+            if (!activeRecord) return;
+            s.itemInput.value = activeRecord.title;
+            s.amountInput.value = activeRecord.amount;
+            selectedCategory = activeRecord.category;
+            selectedPayer = activeRecord.paymentMethod;
+            selectedCard = activeRecord.cardName || '';
+            selectedCurrency = activeRecord.currency;
+            s.timestampInput.value = activeRecord.date;
+            editingExpenseId = activeRecord.id;
+
+            s.currencyButtons.forEach(b => {
+                b.classList.remove('selected');
+                if (b.dataset.currency === selectedCurrency) b.classList.add('selected');
+            });
+
+            s.payerButtons.forEach(b => {
+                b.classList.remove('selected');
+                if (b.dataset.payer === selectedPayer) b.classList.add('selected');
+            });
+
+            if (selectedPayer === '震' || selectedPayer === '沛') {
+                s.cardTypeContainer.classList.remove('hidden');
+                s.cardButtons.forEach(b => {
+                    b.classList.remove('selected');
+                    if (b.dataset.card === selectedCard) b.classList.add('selected');
+                });
+            } else {
+                s.cardTypeContainer.classList.add('hidden');
+            }
+
+            renderCategoryButtonsInApp();
+            
+            s.submitButtonText.textContent = '確認修改雲端項目 🖊️';
+            s.cancelEditBtn.classList.remove('hidden');
+
+            closeModal(s.recordModal);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            haptic(15);
+        });
+
+        s.deleteRecordBtn.addEventListener('click', async () => {
+            if (!activeRecord || !selectedTripId) return;
+
+            if (window.confirm(`確定要在雲端完全刪除項目「${activeRecord.title}」的支出紀錄嗎？`)) {
+                try {
+                    await deleteDoc(doc(db, 'trips', selectedTripId, 'expenses', activeRecord.id));
+                    showFlash('雲端支出已完全刪除 🗑️', false);
+                    closeModal(s.recordModal);
+                    handleResetAllFormFields();
+                    haptic(25);
+                } catch (err) {
+                    showFlash('刪除程序遭遇到雲端規則拒絕 ❌', true);
+                }
+            }
+        });
+
+
+        // --- CSV Engine logic ---
+        s.exportCsvBtn.addEventListener('click', () => {
+            if (records.length === 0) {
+                showFlash('目前此旅程尚無任何支出記帳資料！', true);
+                return;
+            }
+
+            const header = 'ID,消費時間,項目,分類,幣別,金額,支付方式,卡別,代墊帳號\n';
+            const rows = records.map(r => {
+                const escape = (str) => {
+                    if (str === null || str === undefined) return '';
+                    let s = String(str);
+                    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+                        return `"${s.replace(/"/g, '""')}"`;
+                    }
+                    return s;
+                };
+                return `${escape(r.id)},${escape(r.date)},${escape(r.title)},${escape(r.category)},${escape(r.currency)},${escape(r.amount)},${escape(r.paymentMethod)},${escape(r.cardName)},${escape(r.userEmail)}`;
+            }).join('\n');
+
+            const csvContent = header + rows;
+            const UTF8_BOM = "\uFEFF"; 
+            const blob = new Blob([UTF8_BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', `沖繩即時雲端記帳表_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            haptic(30);
+            showFlash("已成功匯出 CSV 檔案到您的下載資料夾 📥", false);
+        });
+
+        s.importCsvBtn.addEventListener('click', () => {
+            s.csvFileInput.click();
+            haptic(10);
+        });
+
+        s.csvFileInput.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (!file || !selectedTripId) return;
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const text = event.target?.result;
+                if (!text) return;
+
+                try {
+                    const lines = text.trim().split('\n');
+                    if (lines.length <= 1) {
+                        showFlash('CSV 檔案規格不符合或為空 ❌', true);
+                        return;
+                    }
+
+                    // Slice header
+                    lines.shift();
+                    let addedCount = 0;
+
+                    for (const line of lines) {
+                        if (!line.trim()) continue;
+
+                        const fields = [];
+                        let inQuote = false;
+                        let field = '';
+                        for (let i = 0; i < line.length; i++) {
+                            const c = line[i];
+                            if (c === '"') {
+                                if (i + 1 < line.length && line[i + 1] === '"') {
+                                    field += '"';
+                                    i++;
+                                } else {
+                                    inQuote = !inQuote;
+                                }
+                            } else if (c === ',' && !inQuote) {
+                                fields.push(field.trim());
+                                field = '';
+                            } else {
+                                field += c;
+                            }
+                        }
+                        fields.push(field.trim());
+
+                        if (fields.length < 6) continue;
+
+                        const rawId = fields[0] || `EXP-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+                        const rawDate = fields[1] || new Date().toISOString();
+                        const rawTitle = fields[2] || '未命名項目';
+                        const rawCat = fields[3] || '我哪知道';
+                        const rawCurrency = (fields[4] || 'JPY').toUpperCase() === 'TWD' ? 'TWD' : 'JPY';
+                        const rawAmount = parseFloat(fields[5]) || 0;
+                        const rawPay = fields[6] || '現金';
+                        const rawCard = fields[7] || null;
+
+                        const recordData = {
+                            id: rawId,
+                            title: rawTitle,
+                            amount: rawAmount,
+                            currency: rawCurrency,
+                            category: rawCat,
+                            paymentMethod: rawPay,
+                            cardName: rawCard || null,
+                            date: rawDate,
+                            userId: auth.currentUser?.uid || 'imported',
+                            userEmail: auth.currentUser?.email || 'imported@domain.com',
+                            createdAt: serverTimestamp()
+                        };
+
+                        await setDoc(doc(db, 'trips', selectedTripId, 'expenses', rawId), recordData);
+                        addedCount++;
+                    }
+
+                    showFlash(`成功匯入 ${addedCount} 筆雲端數據！`, false);
+                    throwConfetti();
+                } catch (err) {
+                    showFlash('檔案解析失敗，請確認檔案符合標準 CSV 格式！', true);
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        });
+
+        s.exchangeRateInput.addEventListener('change', (e) => {
+            const val = parseFloat(e.target.value) || 0.2;
+            exchangeRate = val;
+            localStorage.setItem('exchangeRate', String(val));
+            renderRecordsAndStats();
+        });
+
+
+        // --- Visual Interactive Charts (Chart.js inside modal) ---
+        const drawAnalysisChartsInModal = () => {
+            if (categoryChartInst) categoryChartInst.destroy();
+            if (paymentChartInst) paymentChartInst.destroy();
+            if (dailyChartInst) dailyChartInst.destroy();
+
+            const listFiltered = records.filter(r => r.paymentMethod !== '交通卡');
+            const totalCount = listFiltered.length;
+
+            if (totalCount === 0) {
+                s.anaMaxExpense.textContent = '無';
+                s.anaTopCategory.textContent = '無';
+                s.anaAvgExpense.textContent = 'NT$ 0';
+                s.anaTotalCount.textContent = '0 筆';
+                return;
+            }
+
+            s.anaTotalCount.textContent = `${totalCount} 筆`;
+
+            let maxAmtTwd = -1;
+            let maxTitle = '無';
+            let aggregateOverallTwd = 0;
+            const catSums = {};
+            const paySums = {};
+            const dailySums = {};
+
+            listFiltered.forEach(r => {
+                const amtOriginal = Number(r.amount) || 0;
+                const amtTwd = r.currency === 'JPY' ? amtOriginal * exchangeRate : amtOriginal;
+                aggregateOverallTwd += amtTwd;
+
+                if (amtTwd > maxAmtTwd) {
+                    maxAmtTwd = amtTwd;
+                    maxTitle = `${r.title} (${r.currency === 'JPY' ? '¥' : '$'}${amtOriginal.toLocaleString()})`;
+                }
+
+                const labelCat = r.category || '其它';
+                catSums[labelCat] = (catSums[labelCat] || 0) + amtTwd;
+
+                const labelPay = `${r.paymentMethod}${r.cardName ? ` (${r.cardName})` : ''}`;
+                paySums[labelPay] = (paySums[labelPay] || 0) + amtTwd;
+
+                // Format timestamp
+                const datePart = r.date.split('T')[0];
+                const parts = datePart.split('-');
+                const shortLabel = parts.length >= 3 ? `${Number(parts[1])}/${Number(parts[2])}` : datePart;
+                dailySums[shortLabel] = (dailySums[shortLabel] || 0) + amtTwd;
+            });
+
+            s.anaMaxExpense.textContent = maxTitle;
+            s.anaAvgExpense.textContent = `NT$ ${Math.round(aggregateOverallTwd / totalCount).toLocaleString()}`;
+
+            // Top category identifier
+            let topC = '其它';
+            let topCSum = -1;
+            Object.entries(catSums).forEach(([k,v]) => {
+                if (v > topCSum) {
+                    topC = k;
+                    topCSum = v;
+                }
+            });
+            const cObj = categories.find(c => c.name === topC);
+            s.anaTopCategory.textContent = cObj ? `${cObj.emoji} ${topC}` : topC;
+
+            // 1. Chart pie categories
+            const categoryCanvas = document.getElementById('categoryChartCanvas');
+            if (categoryCanvas) {
+                const labels = Object.keys(catSums);
+                const data = Object.values(catSums).map(v => Math.round(v));
+                const colors = labels.map(label => {
+                    const c = categories.find(cat => cat.name === label);
+                    return c ? c.color : '#4B5563';
+                });
+
+                categoryChartInst = new Chart(categoryCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data,
+                            backgroundColor: colors,
+                            borderColor: '#161b22',
+                            borderWidth: 1.5,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { color: '#c9d1d9', font: { size: 10 } }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => ` ${ctx.label}: NT$ ${ctx.parsed.toLocaleString()}`
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 2. Chart pie payments
+            const paymentCanvas = document.getElementById('paymentChartCanvas');
+            if (paymentCanvas) {
+                const labels = Object.keys(paySums);
+                const data = Object.values(paySums).map(v => Math.round(v));
+
+                const payersScale = { '震': '#58a6ff', '沛': '#ff7b72', '現金': '#e3b341', '交通卡': '#8b949e' };
+                const colors = labels.map(lbl => {
+                    for (const payKey in payersScale) {
+                        if (lbl.startsWith(payKey)) return payersScale[payKey];
+                    }
+                    return '#79c0ff';
+                });
+
+                paymentChartInst = new Chart(paymentCanvas, {
+                    type: 'pie',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data,
+                            backgroundColor: colors,
+                            borderColor: '#161b22',
+                            borderWidth: 1.5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { color: '#c9d1d9', font: { size: 10 } }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => ` ${ctx.label}: NT$ ${ctx.parsed.toLocaleString()}`
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 3. Chart trend daily line
+            const dailyCanvas = document.getElementById('dailyChartCanvas');
+            if (dailyCanvas) {
+                const sortedDays = Object.keys(dailySums).sort((a, b) => {
+                    const parseDay = (s) => {
+                        const parts = s.split('/');
+                        return parts.length === 2 ? Number(parts[0]) * 100 + Number(parts[1]) : 0;
+                    };
+                    return parseDay(a) - parseDay(b);
+                });
+                const data = sortedDays.map(d => Math.round(dailySums[d]));
+
+                dailyChartInst = new Chart(dailyCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: sortedDays,
+                        datasets: [{
+                            label: '每日總計',
+                            data,
+                            borderColor: '#58a6ff',
+                            backgroundColor: 'rgba(88, 166, 255, 0.12)',
+                            borderWidth: 2,
+                            tension: 0.35,
+                            fill: true,
+                            pointBackgroundColor: '#58a6ff',
+                            pointRadius: 4,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { grid: { color: '#21262d' }, ticks: { color: '#8b949e', font: { size: 9 } } },
+                            y: { grid: { color: '#21262d' }, ticks: { color: '#8b949e', font: { size: 9 } } }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => ` 總計額: NT$ ${ctx.parsed.y.toLocaleString()}`
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
+        // Modal triggers
+        s.overallTotalCard.addEventListener('click', () => {
+            if (records.length === 0) {
+                showFlash('此對墊旅別群組目前尚無可分析開銷數據', true);
+                return;
+            }
+            openModal(s.analysisModal);
+            drawAnalysisChartsInModal();
+        });
+
+        s.closeAnalysisModalIconBtn.addEventListener('click', () => closeModal(s.analysisModal));
+        s.closeAnalysisModalFooterBtn.addEventListener('click', () => closeModal(s.analysisModal));
+
+        // Initial launch procedures inside CDN script module environment
+        loadPreferences();
+        renderCategoryButtonsInApp();
+
+        // Boot-up procedure: Fetch config and init Firebase
+        fetch('./firebase-applet-config.json')
+            .then(res => res.ok ? res.json() : null)
+            .then(fetched => {
+                if (fetched && fetched.apiKey) {
+                    firebaseConfig = fetched;
+                }
+            })
+            .catch(e => {
+                console.log("Using primary hardcoded environment fallback configuration");
+            })
+            .finally(() => {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                provider = new GoogleAuthProvider();
+
+                // Core Authentication State
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        showScreen('loading');
+                        s.userAvatar.src = user.photoURL || "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
+                        s.userName.textContent = user.displayName || "沖繩狗勾冒險者";
+                        s.userEmail.textContent = user.email;
+
+                        try {
+                            const whitelistRef = doc(db, 'allowed_users', (user.email || '').toLowerCase());
+                            const whitelistSnap = await getDoc(whitelistRef);
+
+                            if (whitelistSnap.exists()) {
+                                loadPreferences();
+                                await syncTrips();
+                                showScreen('app');
+                            } else {
+                                s.unauthEmail.textContent = user.email;
+                                showScreen('unauth');
+                            }
+                        } catch (e) {
+                            console.error("Whitelist exception on login, bypass for local evaluation", e);
+                            loadPreferences();
+                            await syncTrips();
+                            showScreen('app');
+                        }
+                    } else {
+                        showScreen('login');
+                        stopRealtimeSync();
+                    }
+                });
+            });
+    </script>
+</body>
+</html>
