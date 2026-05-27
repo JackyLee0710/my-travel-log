@@ -826,6 +826,35 @@
                     登出 🚪
                 </button>
             </div>
+
+            <!-- Trips Section -->
+            <div class="trip-selection-block" style="margin-top: 16px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 12px; text-align: left;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span style="font-size: 13px; font-weight: 700; color: #58a6ff; display: flex; align-items: center; gap: 6px;">
+                        ✈️ 選擇本次旅程:
+                    </span>
+                    <button type="button" id="openCreateTripModalBtn" class="btn-option" style="min-height: 28px; padding: 4px 10px; background: rgba(57, 211, 83, 0.1); border-color: rgba(57, 211, 83, 0.3); color: #39d353; font-size: 11px; cursor: pointer; border-radius: 6px;">
+                        ＋ 建立新旅程 🏕️
+                    </button>
+                </div>
+                <div style="margin-top: 8px; display: flex; gap: 8px; align-items: center;">
+                    <select id="tripSelector" class="form-control" style="background: #0d1117; border: 1px solid #30363d; color: #ffffff; border-radius: 6px; padding: 8px 12px; font-size: 13px; font-weight: 500; height: auto; flex: 1; cursor: pointer;">
+                        <option value="" disabled selected>載入旅程中...</option>
+                    </select>
+                    <button type="button" id="copyTripLinkBtn" class="btn-option" style="min-height: 38px; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 12px; background: #21262d; border-color: #30363d; color: #c9d1d9; font-size: 13px;">
+                        🔗 分享旅程
+                    </button>
+                </div>
+                <!-- Join trip block if trip URL was requested but user is not in members list yet -->
+                <div id="joinTripBlock" style="display: none; margin-top: 10px; padding: 12px; background: rgba(242, 204, 96, 0.1); border: 1.5px dashed rgba(242, 204, 96, 0.3); border-radius: 8px; text-align: center;">
+                    <p style="font-size: 12px; color: #f2cc60; margin-bottom: 8px; font-weight: 500;">
+                        👋 您目前不在「<span id="unjoinedTripName">...</span>」的旅伴名單中！
+                    </p>
+                    <button type="button" id="joinTripBtn" class="gradient-button" style="height: 32px; font-size: 12px; padding: 0 16px; background: linear-gradient(135deg, #f2cc60 0%, #e3b341 100%); color: #0d1117; font-weight: 700;">
+                        ➕ 按此加入此旅群，共同記帳
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Okinawa visual accounting dashboard -->
@@ -1082,6 +1111,26 @@
         </div>
     </div>
 
+    <!-- Create Trip Modal -->
+    <div id="createTripModal" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2 class="text-xl font-bold mb-4 text-center" style="color: #ffffff;">🏕️ 建立新旅遊群組</h2>
+            <div class="space-y-4 p-4">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <input type="text" id="newTripNameInput" class="form-control" placeholder="例如：2026 沖繩夏日大冒險 🐕" required>
+                    <label for="newTripNameInput" class="form-label">旅程名稱</label>
+                </div>
+                <div class="bg-blue-950/20 border border-blue-900/40 text-blue-400 p-3 rounded-lg text-left text-xs" style="line-height: 1.4; background: rgba(56, 139, 253, 0.05); border: 1px solid rgba(56, 139, 253, 0.2); color: #8b949e;">
+                    💡 建立旅程後，您將自動加入為第一位旅伴。之後可以分享網址給其他旅伴，他們點開即可加入為期記帳！
+                </div>
+            </div>
+            <div class="mt-6 flex gap-3">
+                <button id="saveTripBtn" class="gradient-button" style="flex: 1;">確認建立 🗺️</button>
+                <button id="closeCreateTripModalBtn" class="btn-option" style="flex: 1; background: #21262d; border-color: #30363d; color: #c9d1d9;">關閉</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Expense Analysis Modal -->
     <div id="analysisModal" class="modal-backdrop">
         <div class="modal-content" style="max-width: 500px; max-height: 85vh; overflow-y: auto;">
@@ -1155,7 +1204,7 @@
 
 <script type="module">
     // 1. Firebase System Imports from CDN
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { 
         getAuth, 
         signInWithPopup, 
@@ -1164,7 +1213,7 @@
         onAuthStateChanged,
         browserLocalPersistence,
         setPersistence
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { 
         getFirestore, 
         doc, 
@@ -1174,8 +1223,13 @@
         onSnapshot, 
         collection, 
         serverTimestamp,
-        getDocFromServer
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        getDocFromServer,
+        query,
+        where,
+        getDocs,
+        updateDoc,
+        arrayUnion
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     document.addEventListener('DOMContentLoaded', async function() {
         // --- DOM Elements ---
@@ -1183,6 +1237,18 @@
         const loginContainer = document.getElementById('loginContainer');
         const unauthorizedContainer = document.getElementById('unauthorizedContainer');
         const appContainer = document.getElementById('appContainer');
+
+        // Trips UI Elements
+        const tripSelector = document.getElementById('tripSelector');
+        const openCreateTripModalBtn = document.getElementById('openCreateTripModalBtn');
+        const copyTripLinkBtn = document.getElementById('copyTripLinkBtn');
+        const joinTripBlock = document.getElementById('joinTripBlock');
+        const unjoinedTripName = document.getElementById('unjoinedTripName');
+        const joinTripBtn = document.getElementById('joinTripBtn');
+        const createTripModal = document.getElementById('createTripModal');
+        const newTripNameInput = document.getElementById('newTripNameInput');
+        const saveTripBtn = document.getElementById('saveTripBtn');
+        const closeCreateTripModalBtn = document.getElementById('closeCreateTripModalBtn');
 
         const googleLoginBtn = document.getElementById('googleLoginBtn');
         const unauthLogoutBtn = document.getElementById('unauthLogoutBtn');
@@ -1264,6 +1330,8 @@
 
         // --- State Variables ---
         let records = [];
+        let trips = [];
+        let selectedTripId = null;
         let selectedCategory = null;
         let selectedPayer = null;
         let selectedCard = null;
@@ -1420,42 +1488,260 @@
             }
         }
 
+        // Retrieve trip ID from URL query parameters
+        function getTripIdFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('trip');
+        }
+
+        // --- Trips Engine ---
+        async function loadTrips(targetTripIdFromUrl = null) {
+            const currentUser = auth.currentUser;
+            if (!currentUser) return;
+
+            try {
+                // Fetch trips where user is a member
+                const tripsQuery = query(collection(db, 'trips'), where('members', 'arrayContains', currentUser.uid));
+                const querySnap = await getDocs(tripsQuery);
+                
+                trips = [];
+                querySnap.forEach(docSnap => {
+                    trips.push({
+                        id: docSnap.id,
+                        ...docSnap.data()
+                    });
+                });
+
+                trips.sort((a, b) => {
+                    const timeA = a.createdAt ? (a.createdAt.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt).getTime()) : 0;
+                    const timeB = b.createdAt ? (b.createdAt.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt).getTime()) : 0;
+                    return timeB - timeA;
+                });
+
+                tripSelector.innerHTML = '';
+                
+                if (trips.length === 0) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = '❌ 暫無任何旅程，請點右側建立';
+                    option.disabled = true;
+                    option.selected = true;
+                    tripSelector.appendChild(option);
+                    
+                    selectedTripId = null;
+                    stopRealtimeSync();
+                    records = [];
+                    renderRecords();
+                    calculateAndRenderDashboard();
+                } else {
+                    trips.forEach(trip => {
+                        const option = document.createElement('option');
+                        option.value = trip.id;
+                        option.textContent = trip.name;
+                        tripSelector.appendChild(option);
+                    });
+                }
+
+                let tripToSelect = null;
+                const savedTripId = localStorage.getItem('selectedTripId');
+
+                if (targetTripIdFromUrl) {
+                    tripToSelect = targetTripIdFromUrl;
+                } else if (savedTripId && trips.some(t => t.id === savedTripId)) {
+                    tripToSelect = savedTripId;
+                } else if (trips.length > 0) {
+                    tripToSelect = trips[0].id;
+                }
+
+                if (tripToSelect) {
+                    const matchedTripInList = trips.find(t => t.id === tripToSelect);
+                    if (matchedTripInList) {
+                        selectedTripId = tripToSelect;
+                        localStorage.setItem('selectedTripId', selectedTripId);
+                        tripSelector.value = selectedTripId;
+                        joinTripBlock.style.display = 'none';
+                        startRealtimeSync();
+                    } else {
+                        try {
+                            const tripDocRef = doc(db, 'trips', tripToSelect);
+                            const tripSnap = await getDoc(tripDocRef);
+                            if (tripSnap.exists()) {
+                                const tripData = tripSnap.data();
+                                selectedTripId = tripToSelect;
+                                unjoinedTripName.textContent = tripData.name || '未命名旅程';
+                                joinTripBlock.style.display = 'block';
+                                stopRealtimeSync();
+                                records = [];
+                                renderRecords();
+                                calculateAndRenderDashboard();
+
+                                // Update URL to indicate this pending join trip
+                                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?trip=' + selectedTripId;
+                                window.history.pushState({ path: newUrl }, '', newUrl);
+                            } else {
+                                flashMessage('指定的旅程不存在！已經載入您的首個旅程。', true);
+                                if (trips.length > 0) {
+                                    selectedTripId = trips[0].id;
+                                    localStorage.setItem('selectedTripId', selectedTripId);
+                                    tripSelector.value = selectedTripId;
+                                    startRealtimeSync();
+                                }
+                                joinTripBlock.style.display = 'none';
+                            }
+                        } catch (err) {
+                            console.error("Failed to fetch target trip details for joining:", err);
+                        }
+                    }
+                } else {
+                    selectedTripId = null;
+                }
+
+            } catch (error) {
+                console.error("Error loading trips:", error);
+                handleFirestoreError(error, OperationType.LIST, "trips");
+            }
+        }
+
         // --- Auth Observer Handler ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 console.log("偵測到使用者已登入:", user.email);
                 showScreen('loading');
 
-                // Check whitelist email existence: /allowed_users/{email} (lowercased document path)
-                const emailKey = user.email.toLowerCase();
-                const whitelistDocRef = doc(db, 'allowed_users', emailKey);
-
                 try {
-                    const whitelistSnap = await getDoc(whitelistDocRef);
-                    if (whitelistSnap.exists()) {
-                        console.log("白名單驗證通過!");
-                        
-                        // Personalize main view
-                        userAvatar.src = user.photoURL || "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
-                        userName.textContent = user.displayName || "沖繩冒險者";
-                        userEmailDisplay.textContent = user.email;
+                    // Personalize main view
+                    userAvatar.src = user.photoURL || "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
+                    userName.textContent = user.displayName || "沖繩冒險者";
+                    userEmailDisplay.textContent = user.email;
 
-                        loadLocalPreferencesAndBoot();
-                        startRealtimeSync();
-                        showScreen('app');
-                    } else {
-                        console.warn("此帳號不在白名單內:", user.email);
-                        unauthEmailDisplay.textContent = user.email;
-                        showScreen('unauthorized');
-                    }
+                    loadLocalPreferencesAndBoot();
+                    
+                    const urlTripId = getTripIdFromUrl();
+                    await loadTrips(urlTripId);
+                    
+                    showScreen('app');
                 } catch (error) {
-                    console.error("Whitelist validation failed:", error);
-                    handleFirestoreError(error, OperationType.GET, `allowed_users/${emailKey}`);
+                    console.error("Auth check trip initialization failed:", error);
+                    showScreen('login');
                 }
             } else {
                 console.log("目前無使用者登入，導向登入頁面。");
                 stopRealtimeSync();
                 showScreen('login');
+            }
+        });
+
+        // --- Trips Interactions Event Listeners ---
+        tripSelector.addEventListener('change', () => {
+            selectedTripId = tripSelector.value;
+            localStorage.setItem('selectedTripId', selectedTripId);
+            
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?trip=' + selectedTripId;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+
+            joinTripBlock.style.display = 'none';
+            flashMessage(`已切換至旅程：${tripSelector.options[tripSelector.selectedIndex].text}`);
+            
+            startRealtimeSync();
+        });
+
+        openCreateTripModalBtn.addEventListener('click', () => {
+            newTripNameInput.value = '';
+            showModal(createTripModal);
+        });
+
+        closeCreateTripModalBtn.addEventListener('click', () => {
+            hideModal(createTripModal);
+        });
+
+        saveTripBtn.addEventListener('click', async () => {
+            const currentUser = auth.currentUser;
+            if (!currentUser) return;
+
+            const name = newTripNameInput.value.trim();
+            if (!name) {
+                flashMessage('請填寫旅程名稱！', true);
+                return;
+            }
+
+            try {
+                saveTripBtn.disabled = true;
+                saveTripBtn.textContent = '正在建立旅程中...';
+
+                const tripId = 'TRIP-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+                
+                const tripDocRef = doc(db, 'trips', tripId);
+                await setDoc(tripDocRef, {
+                    id: tripId,
+                    name: name,
+                    members: [currentUser.uid],
+                    createdAt: serverTimestamp()
+                });
+
+                flashMessage(`成功建立新旅程：「${name}」！`, false);
+                createConfetti();
+                hideModal(createTripModal);
+
+                localStorage.setItem('selectedTripId', tripId);
+                
+                // Update URL parameter
+                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?trip=' + tripId;
+                window.history.pushState({ path: newUrl }, '', newUrl);
+
+                await loadTrips(tripId);
+
+            } catch (err) {
+                console.error("Failed to create trip:", err);
+                flashMessage('建立旅程失敗，請重試！', true);
+            } finally {
+                saveTripBtn.disabled = false;
+                saveTripBtn.textContent = '確認建立 🗺️';
+            }
+        });
+
+        copyTripLinkBtn.addEventListener('click', () => {
+            if (!selectedTripId) {
+                flashMessage('請先建立或選擇一個旅程以進行分享！', true);
+                return;
+            }
+
+            const shareUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?trip=' + selectedTripId;
+            
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                flashMessage('旅程分享連結已成功複製！請直接分享給旅伴 📋', false);
+                triggerPhoneHaptic(20);
+            }).catch(err => {
+                console.error('Failed to copy link:', err);
+                flashMessage('連結複製失敗，請手動複製網址：' + shareUrl, false);
+            });
+        });
+
+        joinTripBtn.addEventListener('click', async () => {
+            const currentUser = auth.currentUser;
+            if (!currentUser || !selectedTripId) return;
+
+            try {
+                joinTripBtn.disabled = true;
+                joinTripBtn.textContent = '正在加入中...';
+                
+                const tripDocRef = doc(db, 'trips', selectedTripId);
+                await updateDoc(tripDocRef, {
+                    members: arrayUnion(currentUser.uid)
+                });
+                
+                flashMessage('成功加入旅程！祝您旅途記帳愉快！🎉', false);
+                createConfetti();
+                
+                joinTripBlock.style.display = 'none';
+                
+                await loadTrips(selectedTripId);
+                
+            } catch (err) {
+                console.error("Failed to join trip:", err);
+                flashMessage('加入旅程失敗，請確認您是否有相應權限。', true);
+            } finally {
+                joinTripBtn.disabled = false;
+                joinTripBtn.textContent = '➕ 按此加入此旅群，共同記帳';
             }
         });
 
@@ -1510,7 +1796,15 @@
         function startRealtimeSync() {
             if (dbUnsubscribe) dbUnsubscribe();
 
-            const expensesCollection = collection(db, "expenses");
+            if (!selectedTripId) {
+                records = [];
+                renderRecords();
+                renderCategoryButtons();
+                calculateAndRenderDashboard();
+                return;
+            }
+
+            const expensesCollection = collection(db, "trips", selectedTripId, "expenses");
             // Real-time snapshot listener
             dbUnsubscribe = onSnapshot(expensesCollection, (snapshot) => {
                 const fetched = [];
@@ -1531,7 +1825,19 @@
                 renderCategoryButtons();
                 calculateAndRenderDashboard();
             }, (error) => {
-                handleFirestoreError(error, OperationType.LIST, "expenses");
+                console.error("Snapshot dynamic sync error:", error);
+                handleFirestoreError(error, OperationType.LIST, `trips/${selectedTripId}/expenses`);
+                
+                if (error.code === 'permission-denied') {
+                    const tripDocRef = doc(db, 'trips', selectedTripId);
+                    getDoc(tripDocRef).then(tripSnap => {
+                        if (tripSnap.exists()) {
+                            const tripData = tripSnap.data();
+                            unjoinedTripName.textContent = tripData.name || '未命名旅程';
+                            joinTripBlock.style.display = 'block';
+                        }
+                    }).catch(err => console.error("Unjoined check background read failed:", err));
+                }
             });
         }
 
@@ -1771,6 +2077,12 @@
             const targetRecordId = editingId || generateIndependentRecordId();
             
             submitButton.innerHTML = '正在同步至雲端...';
+            if (!selectedTripId) {
+                flashMessage('請先建立或選擇一個旅程，再進行記帳！❌', true);
+                submitButton.disabled = false;
+                return;
+            }
+
             submitButton.disabled = true;
 
             const record = {
@@ -1787,7 +2099,7 @@
                 createdAt: serverTimestamp()
             };
 
-            const recordDocRef = doc(db, 'expenses', targetRecordId);
+            const recordDocRef = doc(db, 'trips', selectedTripId, 'expenses', targetRecordId);
 
             try {
                 if (editingId) {
@@ -1809,7 +2121,7 @@
                 resetForm();
             } catch (err) {
                 console.error("Failed to set document:", err);
-                handleFirestoreError(err, OperationType.WRITE, `expenses/${targetRecordId}`);
+                handleFirestoreError(err, OperationType.WRITE, `trips/${selectedTripId}/expenses/${targetRecordId}`);
             } finally {
                 submitButton.disabled = false;
             }
@@ -2060,16 +2372,20 @@
         });
 
         deleteRecordBtn.addEventListener('click', () => {
+            if (!selectedTripId) {
+                flashMessage('無法刪除，因為未選擇旅程！', true);
+                return;
+            }
             hideModal(recordModal);
             showConfirmDialog('確定要在雲端刪除此筆消費嗎？', async () => {
                 const targetId = editingId;
                 try {
-                    await deleteDoc(doc(db, 'expenses', targetId));
+                    await deleteDoc(doc(db, 'trips', selectedTripId, 'expenses', targetId));
                     flashMessage('雲端項目已刪除。', false);
                     resetForm();
                 } catch (err) {
                     console.error("Delete doc failed:", err);
-                    handleFirestoreError(err, OperationType.DELETE, `expenses/${targetId}`);
+                    handleFirestoreError(err, OperationType.DELETE, `trips/${selectedTripId}/expenses/${targetId}`);
                 }
             });
         });
@@ -2147,6 +2463,10 @@
         });
 
         async function parseAndBulkImportCsv(csvContent) {
+            if (!selectedTripId) {
+                flashMessage('請先建立或選擇一個旅程，才能匯入帳目！❌', true);
+                return;
+            }
             try {
                 const lines = csvContent.trim().split('\n');
                 if (lines.length === 0) {
@@ -2217,7 +2537,7 @@
                     };
 
                     try {
-                        await setDoc(doc(db, 'expenses', rawId), record);
+                        await setDoc(doc(db, 'trips', selectedTripId, 'expenses', rawId), record);
                         importCount++;
                     } catch (e) {
                         console.error("Bulk write ignore:", e);
