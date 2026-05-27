@@ -1071,17 +1071,17 @@
                     const menuWidth = 140;
                     const menuHeight = 90;
                     
-                    let posX = clientX + window.scrollX;
-                    let posY = clientY + window.scrollY;
+                    let posX = clientX;
+                    let posY = clientY;
 
                     if (clientX + menuWidth > window.innerWidth) {
-                        posX = window.innerWidth - menuWidth - 10 + window.scrollX;
+                        posX = window.innerWidth - menuWidth - 10;
                     }
                     if (posX < 0) {
                         posX = 10;
                     }
                     if (clientY + menuHeight > window.innerHeight) {
-                        posY = window.innerHeight - menuHeight - 10 + window.scrollY;
+                        posY = window.innerHeight - menuHeight - 10;
                     }
 
                     s.longPressContextMenu.style.top = `${posY}px`;
