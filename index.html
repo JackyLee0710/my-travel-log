@@ -716,10 +716,19 @@
                 clearTimeout(flashTimeout);
                 flashTimeout = null;
             }
+            
+            // Instantly hide and reset transition state for successive pops
+            s.flashNotice.classList.remove('opacity-100', 'translate-y-0');
+            s.flashNotice.classList.add('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
+            
+            // Force browser layout reflow to apply instant layout reset
+            void s.flashNotice.offsetHeight;
+            
             s.flashText.textContent = text;
             s.flashNotice.className = `fixed top-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-50 p-4 border rounded-xl shadow-2xl flex items-start gap-2 backdrop-blur-md transition-all duration-350 opacity-100 translate-y-0 ${
-                isError ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-[#1f6feb]/10 border-[#388bfd]/30 text-[#58a6ff]'
+                isError ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-[#1f6feb]/15 border-[#388bfd]/40 text-[#58a6ff]'
             }`;
+            
             flashTimeout = setTimeout(() => {
                 s.flashNotice.classList.remove('opacity-100', 'translate-y-0');
                 s.flashNotice.classList.add('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
@@ -1058,12 +1067,14 @@
 
                 // Desktop right-click and Phone long-press event triggers
                 let lTimer;
-                let touchX = 0;
-                let touchY = 0;
                 let startX = 0;
                 let startY = 0;
+                let touchPageX = 0;
+                let touchPageY = 0;
+                let touchClientX = 0;
+                let touchClientY = 0;
 
-                const showCategoryMenuAt = (clientX, clientY) => {
+                const showCategoryMenuAt = (pageX, pageY, clientX, clientY) => {
                     editingCategory = cat;
                     lastMenuOpenTime = Date.now();
                     haptic(45);
@@ -1071,21 +1082,23 @@
                     const menuWidth = 140;
                     const menuHeight = 90;
                     
-                    let posX = clientX;
-                    let posY = clientY;
+                    let posX = pageX;
+                    let posY = pageY;
 
                     if (clientX + menuWidth > window.innerWidth) {
-                        posX = window.innerWidth - menuWidth - 10;
+                        posX = pageX - (clientX + menuWidth - window.innerWidth) - 10;
                     }
-                    if (posX < 0) {
-                        posX = 10;
+                    if (clientX < 0) {
+                        posX = pageX - clientX + 10;
                     }
                     if (clientY + menuHeight > window.innerHeight) {
-                        posY = window.innerHeight - menuHeight - 10;
+                        posY = pageY - (clientY + menuHeight - window.innerHeight) - 10;
                     }
 
+                    s.longPressContextMenu.style.position = 'absolute';
                     s.longPressContextMenu.style.top = `${posY}px`;
                     s.longPressContextMenu.style.left = `${posX}px`;
+                    s.longPressContextMenu.style.zIndex = '1000';
                     s.longPressContextMenu.classList.remove('hidden');
                     s.longPressContextMenu.classList.add('flex');
                 };
@@ -1093,26 +1106,30 @@
                 btn.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    showCategoryMenuAt(e.clientX, e.clientY);
+                    showCategoryMenuAt(e.pageX, e.pageY, e.clientX, e.clientY);
                 });
 
                 btn.addEventListener('touchstart', (e) => {
                     if (e.touches && e.touches[0]) {
                         startX = e.touches[0].clientX;
                         startY = e.touches[0].clientY;
-                        touchX = startX;
-                        touchY = startY;
+                        touchClientX = startX;
+                        touchClientY = startY;
+                        touchPageX = e.touches[0].pageX;
+                        touchPageY = e.touches[0].pageY;
                     }
                     lTimer = setTimeout(() => {
-                        showCategoryMenuAt(touchX, touchY);
+                        showCategoryMenuAt(touchPageX, touchPageY, touchClientX, touchClientY);
                     }, 650);
                 });
 
                 btn.addEventListener('touchmove', (e) => {
                     if (e.touches && e.touches[0]) {
-                        touchX = e.touches[0].clientX;
-                        touchY = e.touches[0].clientY;
-                        const dist = Math.hypot(touchX - startX, touchY - startY);
+                        touchClientX = e.touches[0].clientX;
+                        touchClientY = e.touches[0].clientY;
+                        touchPageX = e.touches[0].pageX;
+                        touchPageY = e.touches[0].pageY;
+                        const dist = Math.hypot(touchClientX - startX, touchClientY - startY);
                         if (dist > 15) {
                             clearTimeout(lTimer);
                         }
@@ -1145,6 +1162,11 @@
                 s.longPressContextMenu.classList.remove('flex');
             }
         });
+
+        window.addEventListener('scroll', () => {
+            s.longPressContextMenu.classList.add('hidden');
+            s.longPressContextMenu.classList.remove('flex');
+        }, { passive: true });
 
         // Hide/Edit triggers from context menu
         s.contextHideBtn.addEventListener('click', () => {
@@ -1398,7 +1420,7 @@
 
             records.forEach((record, index) => {
                 const itemEl = document.createElement('div');
-                itemEl.className = "flex items-center justify-between py-3 px-1 hover:bg-[#1a1f29]/40 active:bg-blue-900/5 transition-colors cursor-pointer summary-item relative overflow-hidden group";
+                itemEl.className = "flex items-center justify-between py-3 px-3 hover:bg-[#1f242d] active:bg-blue-900/10 transition-all cursor-pointer summary-item relative overflow-hidden group border border-transparent hover:border-[#30363d] rounded-xl mb-1.5 last:mb-0";
                 itemEl.style.animationDelay = `${index * 0.015}s`;
 
                 const recDate = new Date(record.date);
@@ -1433,7 +1455,7 @@
                     </div>
 
                     <!-- Ambient Categorized Category Name overlay background -->
-                    <div class="absolute right-4 top-1/2 -translate-y-1/2 text-[26px] font-extrabold font-sans text-white opacity-[0.2] select-none pointer-events-none group-hover:opacity-[0.2] transition-opacity uppercase">
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 text-[38px] font-black font-sans text-white/[0.04] select-none pointer-events-none group-hover:text-white/[0.08] transition-all uppercase leading-none">
                         ${record.category}
                     </div>
                 `;
