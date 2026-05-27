@@ -1154,7 +1154,7 @@
                 hiddenCategories.push(targetName);
                 localStorage.setItem('hiddenCategories', JSON.stringify(hiddenCategories));
                 renderCategoryButtonsInApp();
-                showFlash(`分類「${targetName}」已加入隱藏欄。`, false);
+                showFlash(`分類「${targetName}」已隱藏。`, false);
             }
             s.longPressContextMenu.classList.add('hidden');
         });
@@ -1392,7 +1392,7 @@
             // Render dynamic scroll records list log boxes
             s.recordList.innerHTML = '';
             if (records.length === 0) {
-                s.recordList.innerHTML = `<div class="text-center text-slate-500 py-12 text-xs italic">🌴 目前無雲端消費紀錄。快來記第一筆帳吧！</div>`;
+                s.recordList.innerHTML = `<div class="text-center text-slate-500 py-12 text-xs italic">🌴 目前無消費紀錄。快來記第一筆帳吧！</div>`;
                 return;
             }
 
@@ -1468,7 +1468,7 @@
             e.preventDefault();
             const currentUser = auth.currentUser;
             if (!currentUser || !selectedTripId) {
-                showFlash('非法的對應旅別群組 ❌', true);
+                showFlash('非法的組別 ❌', true);
                 return;
             }
 
@@ -1481,7 +1481,7 @@
                 return;
             }
 
-            s.submitButtonText.textContent = '進行雲端同步中...';
+            s.submitButtonText.textContent = '進行同步中...';
             document.getElementById('submitButton').disabled = true;
 
             const expenseId = editingExpenseId || `EXP-${Date.now()}-${Math.random().toString(36).substring(2,7).toUpperCase()}`;
@@ -1515,7 +1515,7 @@
                 }
 
                 await setDoc(ref, expensePayload);
-                showFlash(editingExpenseId ? '消費數據修改成功 ✨' : '雲端記帳成功！💰', false);
+                showFlash(editingExpenseId ? '消費數據修改成功 ✨' : '記帳成功！💰', false);
                 throwConfetti();
                 haptic(30);
 
@@ -1524,7 +1524,7 @@
             } catch (err) {
                 showFlash(`資料儲存異常：${err.message}`, true);
             } finally {
-                s.submitButtonText.textContent = '送出儲存至雲端';
+                s.submitButtonText.textContent = '送出儲存';
                 document.getElementById('submitButton').disabled = false;
             }
         });
@@ -1541,7 +1541,7 @@
             s.cardButtons.forEach(b => b.classList.remove('selected'));
             s.cardTypeContainer.classList.add('hidden');
             s.cancelEditBtn.classList.add('hidden');
-            s.submitButtonText.textContent = '送出儲存至雲端';
+            s.submitButtonText.textContent = '送出儲存';
 
             s.currencyButtons.forEach(b => b.classList.remove('selected'));
             document.querySelector('[data-currency="JPY"]').classList.add('selected');
@@ -1589,7 +1589,7 @@
 
             renderCategoryButtonsInApp();
             
-            s.submitButtonText.textContent = '確認修改雲端項目 🖊️';
+            s.submitButtonText.textContent = '確認修改項目 🖊️';
             s.cancelEditBtn.classList.remove('hidden');
 
             closeModal(s.recordModal);
@@ -1600,15 +1600,15 @@
         s.deleteRecordBtn.addEventListener('click', async () => {
             if (!activeRecord || !selectedTripId) return;
 
-            if (window.confirm(`確定要在雲端完全刪除項目「${activeRecord.title}」的支出紀錄嗎？`)) {
+            if (window.confirm(`確定要刪除項目「${activeRecord.title}」的支出紀錄嗎？`)) {
                 try {
                     await deleteDoc(doc(db, 'trips', selectedTripId, 'expenses', activeRecord.id));
-                    showFlash('雲端支出已完全刪除 🗑️', false);
+                    showFlash('該筆紀錄刪除 🗑️', false);
                     closeModal(s.recordModal);
                     handleResetAllFormFields();
                     haptic(25);
                 } catch (err) {
-                    showFlash('刪除程序遭遇到雲端規則拒絕 ❌', true);
+                    showFlash('刪除操作遭拒 ❌', true);
                 }
             }
         });
