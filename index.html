@@ -847,15 +847,14 @@
                     stopRealtimeSync();
                     records = [];
                     renderRecordsAndStats();
-                    return;
+                } else {
+                    trips.forEach(t => {
+                        const opt = document.createElement('option');
+                        opt.value = t.id;
+                        opt.textContent = t.name;
+                        s.tripSelector.appendChild(opt);
+                    });
                 }
-
-                trips.forEach(t => {
-                    const opt = document.createElement('option');
-                    opt.value = t.id;
-                    opt.textContent = t.name;
-                    s.tripSelector.appendChild(opt);
-                });
 
                 // Read trip ID parameters
                 const params = new URLSearchParams(window.location.search);
