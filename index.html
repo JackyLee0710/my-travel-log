@@ -1,0 +1,4025 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>沖繩快速記帳與分帳</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --font-sans: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Space Grotesk', monospace;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: var(--font-sans);
+            touch-action: manipulation; /* Optimizes mobile click response */
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+            height: auto;
+            min-height: 100vh;
+            background-color: #0e1117; /* Slate dark background */
+            padding: 16px;
+            color: #E5E7EB;
+        }
+        
+        @media (max-width: 500px) {
+            body {
+                padding: 8px;
+            }
+        }
+
+        .checkout-container {
+            position: relative;
+            width: 100%;
+            max-width: 650px;
+            padding: 24px;
+            background-color: #161b22; /* Card background */
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border: 1px solid #21262d;
+        }
+        
+        @media (max-width: 480px) {
+            .checkout-container {
+                padding: 16px;
+                border-radius: 16px;
+            }
+        }
+
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #21262d;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.05em;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: #8b949e;
+            font-size: 14px;
+            line-height: 1.5;
+            letter-spacing: 0.05em;
+        }
+
+        .device-badge-header {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: #21262d;
+            border-radius: 20px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: #58a6ff;
+            font-weight: 500;
+            margin-top: 8px;
+            border: 1px solid #30363d;
+        }
+        
+        .checkout-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-section {
+            background-color: #1f242c;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            color: #c9d1d9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-left: 3px solid #3b82f6;
+            padding-left: 8px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        
+        @media (max-width: 480px) {
+            .form-row {
+                flex-direction: column;
+                gap: 14px;
+            }
+        }
+
+        .form-group {
+            flex: 1;
+            position: relative;
+        }
+
+        /* Prevent input zooming on touch devices (font-size to 16px is standard) */
+        .form-control {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            font-size: 16px; 
+            transition: all 0.2s ease;
+            background: #0d1117;
+            color: #c9d1d9;
+            appearance: none;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #58a6ff;
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+            background: #161b22;
+        }
+
+        .form-control::placeholder {
+            color: #484f58;
+        }
+        
+        .form-control:-webkit-autofill {
+            -webkit-box-shadow: 0 0 0 50px #0d1117 inset;
+            -webkit-text-fill-color: #c9d1d9;
+        }
+
+        .form-label {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: #1f242c;
+            padding: 0 6px;
+            font-size: 12px;
+            color: #8b949e;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus + .form-label {
+            color: #58a6ff;
+        }
+
+        /* Styled Buttons with distinct tap dimensions for mobile devices */
+        .gradient-button {
+            position: relative;
+            background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            height: 48px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(56, 139, 253, 0.2);
+            user-select: none;
+        }
+
+        .gradient-button:active {
+            transform: scale(0.98);
+            background: linear-gradient(135deg, #388bfd 0%, #1f6feb 100%);
+        }
+        
+        .gradient-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .gradient-button-icon {
+            margin-left: 8px;
+        }
+        
+        /* Select Button options style optimized with larger mobile sizes */
+        .btn-option {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-weight: 500;
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            color: #8b949e;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            user-select: none;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 40px; /* Great for thumb clicks on devices */
+        }
+        
+        .btn-option:active {
+            background-color: #21262d;
+        }
+
+        .btn-option.selected {
+            background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
+            color: #ffffff;
+            border-color: #58a6ff;
+            box-shadow: 0 4px 12px rgba(31, 111, 235, 0.3);
+        }
+        
+        /* Mobile Specific Grid lists */
+        .button-flex-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 8px;
+            width: 100%;
+        }
+
+        /* 沖縄 Visual analysis and Splits display card */
+        .dashboard-container {
+            background: linear-gradient(145deg, #161b22 0%, #1f242c 100%);
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        @media (max-width: 400px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .db-card {
+            background: #0d1117;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid #21262d;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .db-card-title {
+            font-size: 12px;
+            color: #8b949e;
+            font-weight: 500;
+        }
+
+        .db-card-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+            font-family: var(--font-mono);
+        }
+        
+        .db-card-sub {
+            font-size: 11px;
+            color: #8b949e;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+            border-top: 1px dashed #21262d;
+            padding-top: 4px;
+        }
+
+        .split-alert {
+            background: rgba(31, 111, 235, 0.1);
+            border: 1px solid rgba(88, 166, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: #c9d1d9;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .split-alert-title {
+            font-weight: 700;
+            color: #58a6ff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Order dynamic view */
+        .order-summary {
+            padding: 8px;
+            background: #0d1117;
+            border-radius: 10px;
+            border: 1px solid #21262d;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #161b22;
+            border: 1px solid var(--cat-color-alpha30, #30363d);
+            border-radius: 8px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 10px var(--cat-color-alpha10, rgba(0, 0, 0, 0));
+            animation: fadeInUp 0.35s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .summary-item-content {
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+            z-index: 2;
+        }
+        
+        .summary-item-bg-text {
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            transform: translateY(-50%);
+            color: var(--cat-color-alpha08, rgba(255, 255, 255, 0.02));
+            font-size: 32px;
+            font-weight: 800;
+            user-select: none;
+            pointer-events: none;
+            text-transform: uppercase;
+            font-family: var(--font-sans);
+            z-index: 1;
+            transition: color 0.25s ease;
+        }
+
+        .summary-item-img {
+            font-size: 22px;
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+            background-color: rgba(255,255,255,0.05);
+        }
+        
+        .summary-item-details {
+            flex: 1;
+            min-width: 0; /* Prevents overflow */
+        }
+
+        .summary-item-name {
+            font-weight: 600;
+            color: #ffffff;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .summary-item-variant {
+            color: #8b949e;
+            font-size: 12px;
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .summary-item-price-and-time {
+            text-align: right;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+        
+        .summary-item-price {
+            font-weight: 700;
+            color: #ffffff;
+            font-size: 15px;
+            font-family: var(--font-mono);
+        }
+
+        .summary-item-converted-price {
+            font-size: 11px;
+            color: #10b981;
+            font-family: var(--font-mono);
+            margin-top: 1px;
+            font-weight: 500;
+        }
+        
+        .summary-item-date-time {
+            font-size: 11px;
+            color: #484f58;
+            margin-top: 2px;
+        }
+
+        .summary-item:hover {
+            border-color: var(--cat-color, #58a6ff);
+            box-shadow: 0 0 16px var(--cat-color-alpha30, rgba(88, 166, 255, 0.25));
+            transform: translateY(-2px);
+            background: #1c212a;
+        }
+
+        .summary-item:active {
+            border-color: #58a6ff;
+            background: #1f242c;
+            transform: scale(0.98);
+        }
+        
+        /* Compact Card Container Toggle */
+        .card-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 0 16px;
+            background-color: transparent;
+            margin: 0;
+        }
+        
+        .card-container.show {
+            max-height: 320px;
+            padding: 14px 16px;
+            background-color: #1a1e26;
+            border-radius: 8px;
+            border: 1px dashed #30363d;
+            margin-top: 10px;
+        }
+        
+        /* Modals Backdrop layout */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 200;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .modal-backdrop.show {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .modal-content {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 16px;
+            padding: 20px;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transform: translateY(20px);
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-backdrop.show .modal-content {
+            transform: translateY(0);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .flex-wrap { flex-wrap: wrap; }
+        .gap-2 { gap: 8px; }
+        .gap-3 { gap: 12px; }
+        .gap-15 { gap: 15px; }
+        .mt-2 { margin-top: 8px; }
+        .mt-6 { margin-top: 24px; }
+        .w-full { width: 100%; }
+        .text-sm { font-size: 14px; }
+        .text-center { text-align: center; }
+        .text-xl { font-size: 20px; }
+        .font-bold { font-weight: 700; }
+        .mb-4 { margin-bottom: 16px; }
+        .p-4 { padding: 16px; }
+        .p-6 { padding: 24px; }
+        .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 8px; }
+        
+        /* Add Category Special UI styles */
+        .btn-add-category {
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 500;
+            background-color: transparent;
+            border: 1px dashed #30363d;
+            color: #8b949e;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 40px;
+        }
+
+        .btn-add-category:active {
+            border-color: #58a6ff;
+            color: #58a6ff;
+        }
+        
+        .color-picker-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .color-picker-input-wrapper {
+            position: relative;
+            flex-grow: 1;
+            height: 42px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #30363d;
+        }
+        
+        .color-picker-input-wrapper input[type="color"] {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: calc(100% + 20px);
+            height: calc(100% + 20px);
+            border: none;
+            cursor: pointer;
+            background: none;
+        }
+        
+        .color-picker-preview {
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            flex-shrink: 0;
+        }
+
+        .hidden-categories-list {
+            padding: 0;
+            margin-top: 10px;
+            list-style: none;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #21262d;
+            border-radius: 8px;
+            background: #0d1117;
+        }
+        
+        .hidden-category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid #21262d;
+            color: #c9d1d9;
+            font-size: 13px;
+        }
+        
+        .hidden-category-item:last-child {
+            border-bottom: none;
+        }
+        
+        .unhide-btn, .edit-category-btn {
+            background: #21262d;
+            color: #58a6ff;
+            border: 1px solid #30363d;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            user-select: none;
+        }
+
+        .unhide-btn {
+            border-color: rgba(56, 139, 253, 0.4);
+            color: #58a6ff;
+            background: rgba(56, 139, 253, 0.1);
+        }
+
+        .edit-category-btn {
+            border-color: rgba(227, 179, 65, 0.4);
+            color: #ecf2f8;
+            background: rgba(227, 179, 65, 0.1);
+            margin-right: 4px;
+        }
+        
+        /* Floating Context Menu styled safely */
+        .long-press-menu {
+            position: fixed;
+            background-color: #1f242c;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 300;
+            padding: 6px;
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 150px;
+        }
+        
+        .long-press-menu.show {
+            display: flex;
+        }
+
+        .long-press-menu-item {
+            padding: 10px 14px;
+            color: #c9d1d9;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background-color 0.1s;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .long-press-menu-item:hover {
+            background-color: #31363f;
+        }
+        
+        .long-press-menu-item:active {
+            background-color: #1f6feb;
+            color: white;
+        }
+
+        .modal-content .form-group {
+            margin-bottom: 2px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+        
+        /* Confetti Animation */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1000;
+            pointer-events: none;
+            display: none;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            opacity: 0;
+        }
+
+        .section-title-tag {
+            font-size: 11px;
+            color: #8b949e;
+            font-weight: normal;
+            margin-left: auto;
+            letter-spacing: normal;
+        }
+    </style>
+</head>
+<body>
+    <!-- 1. LOADING SCREEN -->
+    <div id="loadingContainer" class="checkout-container" style="display: flex; justify-content: center; align-items: center; text-align: center; max-width: 450px; margin: 40px auto; min-height: 250px;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <div style="font-size: 40px; animation: pulse 1.5s infinite;">🏝️🐕</div>
+            <div class="font-bold text-lg text-white" style="font-weight: 700; color: #ffffff;">正在載入雲端開銷系統...</div>
+            <div style="font-size: 11px; color: #8b949e; font-family: var(--font-mono);">正在驗證 Firebase Auth 狀態</div>
+        </div>
+    </div>
+
+    <!-- 2. LOGIN SCREEN -->
+    <div id="loginContainer" class="checkout-container" style="display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; max-width: 420px; margin: 40px auto; padding: 32px 24px;">
+        <div class="header" style="width: 100%; text-align: center; margin-bottom: 24px;">
+            <span style="font-size: 48px; display: block; margin-bottom: 8px;">🏝️🪙</span>
+            <h1 style="font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.025em; margin-bottom: 6px;">沖繩旅程雲端帳本</h1>
+            <p style="color: #8b949e; font-size: 13px;">資深 Frontend 與 Firebase 整合</p>
+        </div>
+        <div class="flex flex-col gap-3 mt-4" style="width: 100%;">
+            <div class="bg-blue-950/20 border border-blue-900/40 text-blue-400 p-4 rounded-xl text-left text-xs mb-4" style="line-height: 1.5; background: rgba(56, 139, 253, 0.1); border: 1px solid rgba(56, 139, 253, 0.2); border-radius: 8px; color: #58a6ff;">
+                <strong>💡 系統說明：</strong><br>
+                本系統已全面整合 Firebase 雲端資料庫與 Google 身分驗證。
+                登入後將採用即時數據同步，多裝置共向同一個旅行記帳。
+            </div>
+            <button id="googleLoginBtn" class="gradient-button" style="width: 100%; height: 44px; display: flex; justify-content: center; align-items: center; font-weight: 600; cursor: pointer;">
+                🔑 透過 Google 帳號登入
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. UNAUTHORIZED / NOT IN WHITELIST SCREEN -->
+    <div id="unauthorizedContainer" class="checkout-container" style="display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; max-width: 450px; margin: 40px auto; padding: 32px 24px;">
+        <div class="header" style="width: 100%; text-align: center; margin-bottom: 24px;">
+            <span style="font-size: 48px; display: block; margin-bottom: 8px;">⚠️</span>
+            <h1 style="font-size: 24px; font-weight: 800; color: #ff7b72; letter-spacing: -0.025em; margin-bottom: 6px;">登入未經授權</h1>
+            <p style="color: #ff7b72; font-size: 13px;">您的帳號尚未加入系統白名單</p>
+        </div>
+        <div class="flex flex-col gap-3 mt-4" style="width: 100%;">
+            <div style="font-size: 13px; color: #c9d1d9; margin-bottom: 12px;">
+                目前登入之 Email：<br>
+                <strong id="unauthEmailDisplay" style="color: #58a6ff; font-family: var(--font-mono); font-size: 14px;">...</strong>
+            </div>
+
+            <!-- Helpful deployment instructions -->
+            <div class="bg-amber-950/20 border border-amber-900/30 text-amber-500 rounded-xl p-4 text-left text-xs mb-4" style="line-height: 1.5; background: rgba(242, 204, 96, 0.05); border: 1px solid rgba(242, 204, 96, 0.2); border-radius: 8px; color: #f2cc60;">
+                <strong style="color: #f2cc60;">📝 系統啟用指南：</strong>
+                <ol style="list-style-type: decimal; padding-left: 16px; margin-top: 6px;" class="space-y-1">
+                    <li>請前往 Firebase Console 的 Firestore 資料庫。</li>
+                    <li>新增一個名稱為 <strong style="color:#ffffff">allowed_users</strong> 的集合 (Collection)。</li>
+                    <li>在該集合內，建立一個文件 (Document)，其文件 ID 即為您的 Email (例如上方的 Email)。</li>
+                    <li>該文件中需包含屬性 <strong style="color:#ffffff">email</strong> (String)，值也設為相同的 Email。</li>
+                </ol>
+            </div>
+            
+            <button id="unauthLogoutBtn" class="gradient-button" style="width: 100%; height: 44px; display: flex; justify-content: center; align-items: center; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #21262d 0%, #30363d 100%); color: #ff7b72; border: 1px solid #da3633;">
+                🚪 登出並返回登入
+            </button>
+        </div>
+    </div>
+
+    <!-- 4. MAIN APP CONTAINER -->
+    <div id="appContainer" class="checkout-container" style="display: none;">
+        <div class="header">
+            <h1>沖繩快速記帳</h1>
+            <p>來去看沖繩狗勾囉～ 🐕🏝️</p>
+            
+            <!-- User Status Info Box -->
+            <div id="userProfileHeader" class="flex items-center justify-between gap-3 p-3 bg-[#1f242c] rounded-xl border border-[#30363d] mt-4 text-xs" style="text-align: left; display: flex; justify-content: space-between; align-items: center; background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 12px;">
+                <div class="flex items-center gap-2" style="display: flex; align-items: center; gap: 8px;">
+                    <img id="userAvatar" src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" class="w-8 h-8 rounded-full border border-blue-500" referrerpolicy="no-referrer" style="width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid #388bfd; object-fit: cover;" />
+                    <div style="display: flex; flex-direction: column;">
+                        <span id="userName" class="font-bold text-white text-sm" style="font-weight: 700; color: #ffffff; font-size: 13px;">讀取中...</span>
+                        <span id="userEmailDisplay" style="color: #8b949e; font-family: var(--font-mono); font-size: 10px;">...</span>
+                    </div>
+                </div>
+                <button type="button" id="authLogoutBtn" class="btn-option" style="min-height: 28px; padding: 4px 10px; background: rgba(248, 81, 73, 0.1); border-color: rgba(248, 81, 73, 0.3); color: #ff7b72; font-size: 11px; margin-left: auto; cursor: pointer; border-radius: 6px;">
+                    登出 🚪
+                </button>
+            </div>
+        </div>
+
+        <!-- Okinawa visual accounting dashboard -->
+        <div class="dashboard-container">
+            <div class="section-title" style="margin-bottom: 0px; border-left-color: #10b981; display: flex; align-items: center; justify-content: space-between;">
+                <span>📊 旅程開銷與分帳試算</span>
+                <div style="font-size: 11px; font-weight: normal; display: flex; align-items: center; gap: 4px; color: #8b949e;">
+                    日圓匯率: 
+                    <input type="number" id="exchangeRateInput" value="0.2" step="0.001" min="0.01" style="width: 55px; background: #0d1117; border: 1px solid #30363d; border-radius: 4px; color: #58a6ff; text-align: center; font-family: var(--font-mono); font-size: 11px; padding: 1px 3px;">
+                </div>
+            </div>
+            
+            <div class="dashboard-grid">
+                <!-- Overall Highlights Card -->
+                <div class="db-card db-card-highlight" id="overallTotalCard" style="grid-column: span 2; background: linear-gradient(135deg, #1f2d3d 0%, #171b22 100%); border: 1px solid #388bfd; cursor: pointer; transition: all 0.2s ease-in-out; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="db-card-title" style="color: #58a6ff; font-weight: 700;">🌍 整體消費總金額 (折合台幣)</span>
+                        <span style="font-size: 10px; color: #8b949e; background: #21262d; padding: 2px 6px; border-radius: 12px; border: 1px solid #30363d;">
+                            📊 點選開銷分析
+                        </span>
+                    </div>
+                    <span class="db-card-value" id="dashboardOverallTotalTwd" style="font-size: 26px; color: #58a6ff; margin: 4px 0;">NT$ 0</span>
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: #8b949e; margin-top: 4px; border-top: 1px dashed #30363d; padding-top: 4px;">
+                        <span id="overallJpySum">日幣總計: ¥0</span>
+                        <span id="overallTwdSum">台幣總計: $0</span>
+                    </div>
+                </div>
+
+                <div class="db-card">
+                    <span class="db-card-title">💴 日幣開銷總計 (JPY)</span>
+                    <span class="db-card-value" id="dashboardTotalJpy">¥0</span>
+                    <div class="db-card-sub" id="dbSubJpy">
+                        <span>震先付: ¥0</span>
+                        <span>沛先付: ¥0</span>
+                    </div>
+                </div>
+                <div class="db-card">
+                    <span class="db-card-title">💵 台幣開銷總計 (TWD)</span>
+                    <span class="db-card-value" id="dashboardTotalTwd">$0</span>
+                    <div class="db-card-sub" id="dbSubTwd">
+                        <span>震先付: $0</span>
+                        <span>沛先付: $0</span>
+                    </div>
+                </div>
+            </div>
+<!-- Overall Highlights Card 
+            <div class="split-alert" id="splitResultCard">
+                <div class="split-alert-title">
+                    💡 多裝置分帳說明
+                </div>
+                <div style="font-size: 12px; color: #8b949e; line-height: 1.4;">
+                    建立與匯入多裝置資料時，系統會辨認每筆紀錄的裝置來源，點擊消費紀錄可看裝置細節。個人代墊款（不含現金/交通卡）將採 1/2 自動平均拆帳。
+                </div>
+            </div>-->
+        </div>
+
+        <form class="checkout-form" id="expenseForm">
+            <div class="form-section">
+                <div class="section-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 6V12L16 14" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    新增消費項目
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <input type="text" id="item" class="form-control" placeholder="如：拉麵、美之海水族館門票" required>
+                        <label for="item" class="form-label">消費項目</label>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <div id="currencyButtonContainer" class="flex gap-2" style="position: relative; top: 10px;">
+                            <button type="button" class="btn-option text-sm selected" style="flex: 1;" data-currency="JPY">日圓 ¥</button>
+                            <button type="button" class="btn-option text-sm" style="flex: 1;" data-currency="TWD">台幣 $</button>
+                        </div>
+                        <label class="form-label">幣別</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="number" inputmode="decimal" id="amount" class="form-control" placeholder="輸入金額" required min="0.01" step="any">
+                        <label for="amount" class="form-label">金額</label>
+                    </div>
+                </div>
+                
+                <!-- Category Select and Actions -->
+                <div class="form-section mt-2" id="categorySelection" style="background: transparent; border: none; padding: 0;">
+                    <div class="section-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M10 8L16 12L10 16V8Z" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        分類
+                        <span class="section-title-tag">💡 長按分類可進行管理</span>
+                    </div>
+                    <div id="categoryButtonContainer" class="flex flex-wrap gap-2 mt-2">
+                        <!-- Filled dynamically -->
+                    </div>
+                    <div class="flex gap-2 mt-2" style="width: 100%;">
+                        <button type="button" class="btn-add-category text-sm" id="addNewCategoryBtn" style="flex: 1; border-color: #388bfd; color: #58a6ff;">
+                            ➕ 新增分類
+                        </button>
+                        <button type="button" class="btn-add-category text-sm" id="manageCategoriesBtn" style="flex: 1; border-color: #e3b341; color: #f2cc60;">
+                            ⚙️ 管理與隱藏分類
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Payer Select Options -->
+                <div class="form-section mt-6" id="payerSelection" style="background: transparent; border: none; padding: 0;">
+                    <div class="section-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 14C17.5228 14 22 18.2386 22 22H2C2 18.2386 6.47715 14 12 14Z" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        支付人
+                    </div>
+                    <div id="payerButtonContainer" class="button-flex-grid mt-2">
+                        <button type="button" class="btn-option" data-payer="震">🐛 震先付</button>
+                        <button type="button" class="btn-option" data-payer="沛">🐌 沛先付</button>
+                        <button type="button" class="btn-option" data-payer="現金">💵 現金付</button>
+                        <button type="button" class="btn-option" data-payer="交通卡">💳 交通卡</button>
+                    </div>
+                </div>
+                
+                <!-- Cards Collapsible panel -->
+                <div id="cardTypeContainer" class="card-container">
+                    <div class="section-title" style="margin-top: 0px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M16 21V5C16 3.89543 15.1046 3 14 3H10C8.89543 3 8 3.89543 8 5V21" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        卡別代墊 (請選卡片種類)
+                    </div>
+                    <div id="cardButtonContainer" class="button-flex-grid mt-2">
+                        <button type="button" class="btn-option text-sm" data-card="Ubear">Ubear</button>
+                        <button type="button" class="btn-option text-sm" data-card="熊本熊">熊本熊</button>
+                        <button type="button" class="btn-option text-sm" data-card="Paypay台幣">Paypay台</button>
+                        <button type="button" class="btn-option text-sm" data-card="Paypay日幣">Paypay日</button>
+                        <button type="button" class="btn-option text-sm" data-card="Paypay熊本熊">Paypay熊本</button>
+                        <button type="button" class="btn-option text-sm" data-card="大戶">大戶</button>
+                        <button type="button" class="btn-option text-sm" data-card="吉鶴">吉鶴</button>
+                        <button type="button" class="btn-option text-sm" data-card="其他">其他</button>
+                    </div>
+                </div>
+                
+                <div class="form-row" style="margin-top: 20px;">
+                    <div class="form-group">
+                        <input type="datetime-local" id="timestamp" class="form-control" required>
+                        <label for="timestamp" class="form-label">記帳時間</label>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" id="submitButton" class="gradient-button">
+                儲存至本機
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="gradient-button-icon">
+                    <path d="M5 12H19" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 5L19 12L12 19" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <p id="error-message" class="text-sm text-center" style="min-height: 20px; font-weight: 500;"></p>
+        </form>
+
+        <div class="checkout-form">
+            <div class="section-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M14 2V8H20" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                旅程消費明細
+            </div>
+            <div id="recordList" class="order-summary" style="height: 340px; overflow-y: auto;">
+                <!-- Records list rendered here -->
+            </div>
+        </div>
+
+        <!-- Sync Actions with clear visual design -->
+        <div class="flex gap-3">
+            <button id="importCsv" class="btn-option" style="flex: 1; border-color: #30363d; color: #c9d1d9;">📥 匯入資料 (CSV)</button>
+            <button id="exportCsv" class="btn-option" style="flex: 1; border-color: #30363d; color: #c9d1d9;">📤 匯出資料 (CSV)</button>
+        </div>
+
+        <div class="secure-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z" stroke="#8b949e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            沖繩記帳已啟動本地儲存與防重防刪引擎
+        </div>
+
+        <input type="file" id="csvFileInput" class="hidden" accept=".csv">
+    </div>
+    
+    <!-- Category Management Modal -->
+    <div id="addCategoryModal" class="modal-backdrop">
+        <div class="modal-content">
+            <h2 id="modalTitle" class="text-xl font-bold mb-4 text-center" style="color: #ffffff;">新增分類</h2>
+            <div class="space-y-2 p-4">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <input type="text" id="newCategoryEmoji" class="form-control" placeholder="輸入 Emoji 或圖案 (如: 🍣)" required>
+                    <label for="newCategoryEmoji" class="form-label">分類符號</label>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <input type="text" id="newCategoryName" class="form-control" placeholder="分類名稱 (如: 美食飲料)" required>
+                    <label for="newCategoryName" class="form-label">分類名稱</label>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <div class="color-picker-group">
+                        <div class="color-picker-input-wrapper">
+                            <input type="color" id="newCategoryColor" value="#3B82F6">
+                        </div>
+                        <div id="colorPreview" class="color-picker-preview" style="background-color: #3B82F6;"></div>
+                    </div>
+                    <label for="newCategoryColor" class="form-label">分類色調</label>
+                </div>
+                
+                <h3 class="text-sm font-bold mt-6" style="color: #ffffff; border-bottom: 1px solid #30363d; padding-bottom: 6px;">隱藏分類 (點擊即可重新顯示)</h3>
+                <ul id="hiddenCategoriesList" class="hidden-categories-list">
+                    <!-- filled dynamically -->
+                </ul>
+            </div>
+            <div class="mt-6 flex gap-3">
+                <button id="saveCategoryBtn" class="gradient-button" style="flex: 1;">儲存分類</button>
+                <button id="cancelCategoryBtn" class="btn-option" style="flex: 1; background: #21262d; border-color: #30363d; color: #c9d1d9;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Record Detail Modal -->
+    <div id="recordModal" class="modal-backdrop">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-4 text-center" style="color: #ffffff;">消費明細詳情</h2>
+            <div id="modalContent" class="space-y-2 p-4" style="color: #c9d1d9; border-top: 1px solid #30363d; border-bottom: 1px solid #30363d; background: #0d1117; border-radius: 8px;">
+                <!-- filled dynamically -->
+            </div>
+            <div class="mt-6 flex gap-3">
+                <button id="editRecordBtn" class="gradient-button" style="background: linear-gradient(135deg, #238636 0%, #2ea043 100%); flex: 1; box-shadow: none;">編輯</button>
+                <button id="deleteRecordBtn" class="gradient-button" style="background: linear-gradient(135deg, #da3633 0%, #f85149 100%); flex: 1; box-shadow: none;">刪除</button>
+                <button id="closeModalBtn" class="btn-option" style="flex: 1; background: #21262d; border-color: #30363d; color: #c9d1d9;">關閉</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confirm Action Modal -->
+    <div id="confirmDialog" class="modal-backdrop">
+        <div class="modal-content">
+            <p id="confirmMessage" class="mb-4 text-center" style="color: #ffffff; font-weight: 500; line-height: 1.5;"></p>
+            <div class="flex gap-3">
+                <button id="confirmYes" class="gradient-button" style="background: linear-gradient(135deg, #da3633 0%, #f85149 100%); flex: 1; box-shadow: none;">確認</button>
+                <button id="confirmNo" class="btn-option" style="flex: 1; background: #21262d; border-color: #30363d; color: #c9d1d9;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expense Analysis Modal -->
+    <div id="analysisModal" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 500px; max-height: 85vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #30363d; padding-bottom: 12px; margin-bottom: 16px;">
+                <h2 class="text-xl font-bold" style="color: #ffffff; display: flex; align-items: center; gap: 8px; font-size: 18px;">
+                    📊 Okinawa 沖繩消費開銷分析
+                </h2>
+                <button type="button" id="closeAnalysisModalIcon" style="background: none; border: none; font-size: 24px; color: #8b949e; cursor: pointer; line-height: 1;">&times;</button>
+            </div>
+            
+            <div class="space-y-4" style="text-align: left;">
+                <!-- Highlight metrics boxes -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div style="background: #0d1117; padding: 10px; border-radius: 8px; border: 1px solid #21262d; text-align: center; min-width: 0;">
+                        <div style="font-size: 11px; color: #8b949e;">🏆 最大單筆支出</div>
+                        <div id="anaMaxExpense" style="font-size: 13px; font-weight: 700; color: #ff7b72; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">N/A</div>
+                    </div>
+                    <div style="background: #0d1117; padding: 10px; border-radius: 8px; border: 1px solid #21262d; text-align: center; min-width: 0;">
+                        <div style="font-size: 11px; color: #8b949e;">🏷️ 最常消費類別</div>
+                        <div id="anaTopCategory" style="font-size: 13px; font-weight: 700; color: #e3b341; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">N/A</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div style="background: #0d1117; padding: 10px; border-radius: 8px; border: 1px solid #21262d; text-align: center; min-width: 0;">
+                        <div style="font-size: 11px; color: #8b949e;">☕ 平均單筆消費</div>
+                        <div id="anaAvgExpense" style="font-size: 13px; font-weight: 700; color: #58a6ff; margin-top: 2px;">$0</div>
+                    </div>
+                    <div style="background: #0d1117; padding: 10px; border-radius: 8px; border: 1px solid #21262d; text-align: center; min-width: 0;">
+                        <div style="font-size: 11px; color: #8b949e;">📈 行程記帳總筆數</div>
+                        <div id="anaTotalCount" style="font-size: 13px; font-weight: 700; color: #39d353; margin-top: 2px;">0 筆</div>
+                    </div>
+                </div>
+
+                <!-- Chart.js canvas containers -->
+                <div style="background: #0d1117; padding: 14px; border-radius: 8px; border: 1px solid #21262d; margin-top: 10px;">
+                    <span style="font-size: 13px; font-weight: 700; color: #58a6ff; display: block; margin-bottom: 10px; text-align: center;">🎨 消費類別比例分佈</span>
+                    <div style="position: relative; height: 180px; width: 100%;">
+                        <canvas id="categoryDistributionChart"></canvas>
+                    </div>
+                </div>
+
+                <div style="background: #0d1117; padding: 14px; border-radius: 8px; border: 1px solid #21262d;">
+                    <span style="font-size: 13px; font-weight: 700; color: #58a6ff; display: block; margin-bottom: 10px; text-align: center;">💳 支付方式與管道佔比</span>
+                    <div style="position: relative; height: 180px; width: 100%;">
+                        <canvas id="paymentDistributionChart"></canvas>
+                    </div>
+                </div>
+                
+                <div style="background: #0d1117; padding: 14px; border-radius: 8px; border: 1px solid #21262d;">
+                    <span style="font-size: 13px; font-weight: 700; color: #58a6ff; display: block; margin-bottom: 10px; text-align: center;">📅 每日消費趨勢變動</span>
+                    <div style="position: relative; height: 160px; width: 100%;">
+                        <canvas id="dailyTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <button type="button" id="closeAnalysisModalBtn" class="btn-option w-full" style="background: #21262d; border: 1px solid #30363d; color: #c9d1d9;">關閉分析視窗</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Long press context menu -->
+    <div id="longPressMenu" class="long-press-menu">
+        <div class="long-press-menu-item" id="modifyCategoryBtn">✏️ 編輯分類</div>
+        <div class="long-press-menu-item" id="hideCategoryBtn" style="color: #f85149;">🙈 隱藏分類</div>
+    </div>
+
+    <div class="confetti-container" id="confetti-container"></div>
+
+<script type="module">
+    // 1. Firebase System Imports from CDN
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { 
+        getAuth, 
+        signInWithPopup, 
+        GoogleAuthProvider, 
+        signOut, 
+        onAuthStateChanged,
+        browserLocalPersistence,
+        setPersistence
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { 
+        getFirestore, 
+        doc, 
+        getDoc, 
+        setDoc, 
+        deleteDoc, 
+        onSnapshot, 
+        collection, 
+        serverTimestamp,
+        getDocFromServer
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        // --- DOM Elements ---
+        const loadingContainer = document.getElementById('loadingContainer');
+        const loginContainer = document.getElementById('loginContainer');
+        const unauthorizedContainer = document.getElementById('unauthorizedContainer');
+        const appContainer = document.getElementById('appContainer');
+
+        const googleLoginBtn = document.getElementById('googleLoginBtn');
+        const unauthLogoutBtn = document.getElementById('unauthLogoutBtn');
+        const authLogoutBtn = document.getElementById('authLogoutBtn');
+
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const userEmailDisplay = document.getElementById('userEmailDisplay');
+        const unauthEmailDisplay = document.getElementById('unauthEmailDisplay');
+
+        const expenseForm = document.getElementById('expenseForm');
+        const submitButton = document.getElementById('submitButton');
+        const itemInput = document.getElementById('item');
+        const amountInput = document.getElementById('amount');
+        const currencyButtonContainer = document.getElementById('currencyButtonContainer');
+        const timestampInput = document.getElementById('timestamp');
+        const recordList = document.getElementById('recordList');
+        const categoryButtonContainer = document.getElementById('categoryButtonContainer');
+        const payerButtonContainer = document.getElementById('payerButtonContainer');
+        const cardButtonContainer = document.getElementById('cardButtonContainer');
+        const cardTypeContainer = document.getElementById('cardTypeContainer');
+        
+        // Modals
+        const recordModal = document.getElementById('recordModal');
+        const modalContent = document.getElementById('modalContent');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const editRecordBtn = document.getElementById('editRecordBtn');
+        const deleteRecordBtn = document.getElementById('deleteRecordBtn');
+        
+        const confirmDialog = document.getElementById('confirmDialog');
+        const confirmMessage = document.getElementById('confirmMessage');
+        const confirmYes = document.getElementById('confirmYes');
+        const confirmNo = document.getElementById('confirmNo');
+        
+        const exportCsvButton = document.getElementById('exportCsv');
+        const importCsvButton = document.getElementById('importCsv');
+        const csvFileInput = document.getElementById('csvFileInput');
+        const errorMessage = document.getElementById('error-message');
+        const confettiContainer = document.getElementById('confetti-container');
+        
+        // Categories & Management
+        const addNewCategoryBtn = document.getElementById('addNewCategoryBtn');
+        const manageCategoriesBtn = document.getElementById('manageCategoriesBtn');
+        const addCategoryModal = document.getElementById('addCategoryModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const newCategoryEmojiInput = document.getElementById('newCategoryEmoji');
+        const newCategoryNameInput = document.getElementById('newCategoryName');
+        const newCategoryColorInput = document.getElementById('newCategoryColor');
+        const colorPreview = document.getElementById('colorPreview');
+        const saveCategoryBtn = document.getElementById('saveCategoryBtn');
+        const cancelCategoryBtn = document.getElementById('cancelCategoryBtn');
+        const hiddenCategoriesList = document.getElementById('hiddenCategoriesList');
+        
+        // Context Actions
+        const longPressMenu = document.getElementById('longPressMenu');
+        const hideCategoryBtn = document.getElementById('hideCategoryBtn');
+        const modifyCategoryBtn = document.getElementById('modifyCategoryBtn');
+        
+        // Dashboard Stats elements
+        const dashboardTotalJpy = document.getElementById('dashboardTotalJpy');
+        const dashboardTotalTwd = document.getElementById('dashboardTotalTwd');
+        const dbSubJpy = document.getElementById('dbSubJpy');
+        const dbSubTwd = document.getElementById('dbSubTwd');
+        
+        // Interactive overall totals, exchange rates and analytics
+        const exchangeRateInput = document.getElementById('exchangeRateInput');
+        const overallTotalCard = document.getElementById('overallTotalCard');
+        const dashboardOverallTotalTwd = document.getElementById('dashboardOverallTotalTwd');
+        const overallJpySum = document.getElementById('overallJpySum');
+        const overallTwdSum = document.getElementById('overallTwdSum');
+        
+        const analysisModal = document.getElementById('analysisModal');
+        const closeAnalysisModalIcon = document.getElementById('closeAnalysisModalIcon');
+        const closeAnalysisModalBtn = document.getElementById('closeAnalysisModalBtn');
+        const anaMaxExpense = document.getElementById('anaMaxExpense');
+        const anaTopCategory = document.getElementById('anaTopCategory');
+        const anaAvgExpense = document.getElementById('anaAvgExpense');
+        const anaTotalCount = document.getElementById('anaTotalCount');
+
+        // --- State Variables ---
+        let records = [];
+        let selectedCategory = null;
+        let selectedPayer = null;
+        let selectedCard = null;
+        let selectedCurrency = 'JPY';
+        let exchangeRate = 0.2; // Default conversion rate JPY to TWD
+        let dbUnsubscribe = null;
+
+        // Chart instances
+        let categoryChart = null;
+        let paymentChart = null;
+        let dailyChart = null;
+        
+        // Track the actively selected item's targeting elements
+        let editingId = null;
+
+        // --- Default Categories ---
+        let categories = [
+            { name: "美食飲料", emoji: "🍣", color: "#EA580C" },
+            { name: "衣服飾品", emoji: "👕", color: "#2563EB" },
+            { name: "當地住宿", emoji: "🏠", color: "#10B981" },
+            { name: "大眾運輸", emoji: "🚌", color: "#FFFFFF" },
+            { name: "門票費用", emoji: "🤿", color: "#0D9488" },
+            { name: "神社參拜", emoji: "⛩️", color: "#C83232" },
+            { name: "紀念品", emoji: "🗾", color: "#7878FF" },
+            { name: "伴手禮", emoji: "🎁", color: "#F0A30A" },
+            { name: "我哪知道", emoji: "🤷", color: "#4B5563" },
+            { name: "去程機票", emoji: "✈️", color: "#388BFD" },
+            { name: "回程機票", emoji: "✈️", color: "#388BFD" }
+        ];
+        let hiddenCategories = [];
+        
+        // Scrolling & Long Press Optimizations for Mobile
+        let longPressTimer = null;
+        let activeCategoryElement = null;
+        let editingCategoryName = null;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let isMovingFinger = false;
+
+        // --- Error Handling ---
+        const OperationType = {
+          CREATE: 'create',
+          UPDATE: 'update',
+          DELETE: 'delete',
+          LIST: 'list',
+          GET: 'get',
+          WRITE: 'write',
+        };
+
+        function handleFirestoreError(error, operationType, path) {
+            const errInfo = {
+                error: error instanceof Error ? error.message : String(error),
+                authInfo: {
+                    userId: auth.currentUser?.uid,
+                    email: auth.currentUser?.email,
+                    emailVerified: auth.currentUser?.emailVerified,
+                    providerInfo: auth.currentUser?.providerData?.map(provider => ({
+                        providerId: provider.providerId,
+                        email: provider.email,
+                    })) || []
+                },
+                operationType,
+                path
+            };
+            console.error('Firestore Error: ', JSON.stringify(errInfo));
+            flashMessage(`雲端資料錯誤: ${error.message || error}`);
+            throw new Error(JSON.stringify(errInfo));
+        }
+
+        // --- Firebase Configuration Fallbacks ---
+        let firebaseConfig;
+        try {
+            const configRes = await fetch('./firebase-applet-config.json');
+            if (configRes.ok) {
+                firebaseConfig = await configRes.json();
+            } else {
+                throw new Error("Local config load non-ok");
+            }
+        } catch (e) {
+            console.log("Using fallback configurations...", e);
+            firebaseConfig = {
+                apiKey: "AIzaSyBVECDH-BsDRZfCXFYl2G67o_TzogTqnGA",
+                authDomain: "gen-lang-client-0974479125.firebaseapp.com",
+                projectId: "gen-lang-client-0974479125",
+                storageBucket: "gen-lang-client-0974479125.firebasestorage.app",
+                messagingSenderId: "410344326840",
+                appId: "1:410344326840:web:a78a3e71c15d72d032964d",
+                firestoreDatabaseId: "ai-studio-9b9d6d2a-d1da-44c9-9015-9abdb262d388"
+            };
+        }
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // Validate connection on boot
+        async function testConnection() {
+            try {
+                await getDocFromServer(doc(db, 'test', 'connection'));
+            } catch (error) {
+                if (error instanceof Error && error.message.includes('the client is offline')) {
+                    console.error("Please check your Firebase configuration.");
+                }
+            }
+        }
+        testConnection();
+
+        // Force browser persistence option on Auth init
+        try {
+            await setPersistence(auth, browserLocalPersistence);
+        } catch (err) {
+            console.error("Failed to set persistent storage provider: ", err);
+        }
+
+        // Helper IDs generator
+        const generateIndependentRecordId = () => {
+            const timePart = Date.now();
+            const saltPart = Math.random().toString(36).substring(2, 7).toUpperCase();
+            return `EXP-${timePart}-${saltPart}`;
+        };
+
+        const triggerPhoneHaptic = (ms = 15) => {
+            if (navigator.vibrate) {
+                navigator.vibrate(ms);
+            }
+        };
+
+        const showModal = (modalElement) => {
+            modalElement.classList.add('show');
+            triggerPhoneHaptic(10);
+        };
+
+        const hideModal = (modalElement) => {
+            modalElement.classList.remove('show');
+        };
+
+        // UI State Machine
+        function showScreen(screenId) {
+            loadingContainer.style.display = 'none';
+            loginContainer.style.display = 'none';
+            unauthorizedContainer.style.display = 'none';
+            appContainer.style.display = 'none';
+
+            if (screenId === 'loading') {
+                loadingContainer.style.display = 'flex';
+            } else if (screenId === 'login') {
+                loginContainer.style.display = 'flex';
+            } else if (screenId === 'unauthorized') {
+                unauthorizedContainer.style.display = 'flex';
+            } else if (screenId === 'app') {
+                appContainer.style.display = 'block';
+            }
+        }
+
+        // --- Auth Observer Handler ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                console.log("偵測到使用者已登入:", user.email);
+                showScreen('loading');
+
+                // Check whitelist email existence: /allowed_users/{email} (lowercased document path)
+                const emailKey = user.email.toLowerCase();
+                const whitelistDocRef = doc(db, 'allowed_users', emailKey);
+
+                try {
+                    const whitelistSnap = await getDoc(whitelistDocRef);
+                    if (whitelistSnap.exists()) {
+                        console.log("白名單驗證通過!");
+                        
+                        // Personalize main view
+                        userAvatar.src = user.photoURL || "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
+                        userName.textContent = user.displayName || "沖繩冒險者";
+                        userEmailDisplay.textContent = user.email;
+
+                        loadLocalPreferencesAndBoot();
+                        startRealtimeSync();
+                        showScreen('app');
+                    } else {
+                        console.warn("此帳號不在白名單內:", user.email);
+                        unauthEmailDisplay.textContent = user.email;
+                        showScreen('unauthorized');
+                    }
+                } catch (error) {
+                    console.error("Whitelist validation failed:", error);
+                    handleFirestoreError(error, OperationType.GET, `allowed_users/${emailKey}`);
+                }
+            } else {
+                console.log("目前無使用者登入，導向登入頁面。");
+                stopRealtimeSync();
+                showScreen('login');
+            }
+        });
+
+        // Sign In Popup trigger
+        async function handleGoogleLogin() {
+            try {
+                showScreen('loading');
+                await signInWithPopup(auth, provider);
+                createConfetti();
+            } catch (err) {
+                console.error("Login popup failed:", err);
+                flashMessage(`登入失敗: ${err.message}`);
+                showScreen('login');
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                showScreen('loading');
+                await signOut(auth);
+                resetForm();
+            } catch (err) {
+                console.error("Signout fail", err);
+                showScreen('app');
+            }
+        }
+
+        // Event Listeners on Login / Logout Buttons
+        googleLoginBtn.addEventListener('click', handleGoogleLogin);
+        unauthLogoutBtn.addEventListener('click', handleLogout);
+        authLogoutBtn.addEventListener('click', handleLogout);
+
+        // --- Local Preferences ---
+        const loadLocalPreferencesAndBoot = () => {
+            const storedRate = localStorage.getItem('exchangeRate');
+            if (storedRate) {
+                exchangeRate = parseFloat(storedRate) || 0.2;
+            }
+            exchangeRateInput.value = exchangeRate;
+
+            const storedCategories = localStorage.getItem('categories');
+            if (storedCategories) {
+                categories = JSON.parse(storedCategories);
+            }
+            const storedHiddenCategories = localStorage.getItem('hiddenCategories');
+            if (storedHiddenCategories) {
+                hiddenCategories = JSON.parse(storedHiddenCategories);
+            }
+        };
+
+        // --- Real-time Sync ---
+        function startRealtimeSync() {
+            if (dbUnsubscribe) dbUnsubscribe();
+
+            const expensesCollection = collection(db, "expenses");
+            // Real-time snapshot listener
+            dbUnsubscribe = onSnapshot(expensesCollection, (snapshot) => {
+                const fetched = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    fetched.push({
+                        ...data,
+                        id: doc.id
+                    });
+                });
+                
+                // Reactive data structure updates
+                records = fetched;
+                // Client-side timezone-safe date sorting (descending)
+                records.sort((a, b) => b.date.localeCompare(a.date));
+                
+                renderRecords();
+                renderCategoryButtons();
+                calculateAndRenderDashboard();
+            }, (error) => {
+                handleFirestoreError(error, OperationType.LIST, "expenses");
+            });
+        }
+
+        function stopRealtimeSync() {
+            if (dbUnsubscribe) {
+                dbUnsubscribe();
+                dbUnsubscribe = null;
+            }
+        }
+
+        // Save local preferences
+        const saveLocalPreferences = () => {
+            localStorage.setItem('categories', JSON.stringify(categories));
+            localStorage.setItem('hiddenCategories', JSON.stringify(hiddenCategories));
+            renderCategoryButtons();
+        };
+
+        // --- Calculations & Statistics dashboard ---
+        const calculateAndRenderDashboard = () => {
+            let totalJpy = 0;
+            let totalTwd = 0;
+            
+            let jpyZhen = 0;
+            let jpyPei = 0;
+            let jpyCash = 0;
+            
+            let twdZhen = 0;
+            let twdPei = 0;
+            let twdCash = 0;
+            
+            records.forEach(r => {
+                if (r.paymentMethod === '交通卡') return;
+                
+                const amt = Number(r.amount) || 0;
+                if (r.currency === 'JPY') {
+                    totalJpy += amt;
+                    if (r.paymentMethod === '震') jpyZhen += amt;
+                    if (r.paymentMethod === '沛') jpyPei += amt;
+                    if (r.paymentMethod === '現金') jpyCash += amt;
+                } else {
+                    totalTwd += amt;
+                    if (r.paymentMethod === '震') twdZhen += amt;
+                    if (r.paymentMethod === '沛') twdPei += amt;
+                    if (r.paymentMethod === '現金') twdCash += amt;
+                }
+            });
+
+            // Conversion Math
+            const overallTotalTwd = (totalJpy * exchangeRate) + totalTwd;
+
+            dashboardOverallTotalTwd.textContent = `NT$ ${Math.round(overallTotalTwd).toLocaleString()}`;
+            overallJpySum.textContent = `日幣總計: ¥${totalJpy.toLocaleString(undefined, {maximumFractionDigits: 1})}`;
+            overallTwdSum.textContent = `台幣總計: $${totalTwd.toLocaleString(undefined, {maximumFractionDigits: 1})}`;
+
+            dashboardTotalJpy.textContent = `¥${totalJpy.toLocaleString(undefined, {maximumFractionDigits: 1})}`;
+            dashboardTotalTwd.textContent = `$${totalTwd.toLocaleString(undefined, {maximumFractionDigits: 1})}`;
+            
+            dbSubJpy.innerHTML = `<span>震付: ¥${jpyZhen.toLocaleString()}</span><span>沛付: ¥${jpyPei.toLocaleString()}</span><span>現金: ¥${jpyCash.toLocaleString()}</span>`;
+            dbSubTwd.innerHTML = `<span>震付: $${twdZhen.toLocaleString()}</span><span>沛付: $${twdPei.toLocaleString()}</span><span>現金: $${twdCash.toLocaleString()}</span>`;
+        };
+
+        // Render record item logs
+        const renderRecords = () => {
+            recordList.innerHTML = '';
+            if (records.length === 0) {
+                recordList.innerHTML = `<div class="text-center" style="color: #8b949e; padding: 40px 20px; font-size: 14px;">🌴 目前無雲端消費紀錄。快來記第一筆帳吧！</div>`;
+                return;
+            }
+            
+            records.forEach((record, index) => {
+                const recordEl = document.createElement('div');
+                recordEl.classList.add('summary-item');
+                recordEl.dataset.id = record.id;
+                
+                const date = new Date(record.date);
+                const formattedDate = isNaN(date.getTime()) ? record.date.slice(5, 10).replace('-', '/') : `${date.getMonth() + 1}/${date.getDate()}`;
+                const formattedTime = isNaN(date.getTime()) ? record.date.slice(11, 16) : `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+                
+                const currencySymbol = record.currency === 'JPY' ? '¥' : '$';
+                const formattedAmount = `${currencySymbol}${Number(record.amount || 0).toLocaleString()}`;
+                
+                const categoryInfo = categories.find(c => c.name === record.category) || { emoji: '🤷', color: '#4B5563' };
+                const bgColor = categoryInfo.color ? `${categoryInfo.color}22` : "#4B556322";
+                const strokeColor = categoryInfo.color || "#4b5563";
+
+                const hexColor = categoryInfo.color || "#4b5563";
+                recordEl.style.setProperty('--cat-color', hexColor);
+                recordEl.style.setProperty('--cat-color-alpha10', `${hexColor}1a`);
+                recordEl.style.setProperty('--cat-color-alpha08', `${hexColor}14`);
+                recordEl.style.setProperty('--cat-color-alpha30', `${hexColor}4d`);
+                
+                recordEl.style.animationDelay = `${index * 0.02}s`;
+                
+                let priceContentHtml = `<div class="summary-item-price">${formattedAmount}</div>`;
+                if (record.currency === 'JPY') {
+                    const convertedTwd = Math.round(Number(record.amount || 0) * exchangeRate);
+                    priceContentHtml += `<div class="summary-item-converted-price">≈ NT$${convertedTwd.toLocaleString()}</div>`;
+                }
+                
+                // Render writer account
+                const userAlias = record.userEmail ? record.userEmail.split('@')[0] : '未知';
+                
+                recordEl.innerHTML = `
+                    <div class="summary-item-content">
+                        <div class="summary-item-bg-text">${record.category || '其它'}</div>
+                        <div class="summary-item-img" style="background-color: ${bgColor}; border: 1px solid ${strokeColor}">${categoryInfo.emoji}</div>
+                        <div class="summary-item-details">
+                            <div class="summary-item-name">${record.title}</div>
+                            <div class="summary-item-variant">
+                                <span>👤 ${record.paymentMethod}${record.cardName ? " • " + record.cardName : ""}</span>
+                                <span style="background: #21262d; padding: 1px 4px; border-radius: 4px; font-size:10px; font-family: var(--font-mono); color: #8b949e;">${userAlias}</span>
+                            </div>
+                        </div>
+                        <div class="summary-item-price-and-time">
+                            ${priceContentHtml}
+                            <div class="summary-item-date-time">${formattedDate} ${formattedTime}</div>
+                        </div>
+                    </div>
+                `;
+                recordList.appendChild(recordEl);
+            });
+        };
+
+        const renderCategoryButtons = () => {
+            const allCategories = categories.filter(c => !hiddenCategories.includes(c.name));
+            categoryButtonContainer.innerHTML = '';
+            
+            allCategories.forEach(cat => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.classList.add('btn-option', 'text-sm');
+                button.dataset.category = cat.name;
+                button.innerHTML = `<span>${cat.emoji}</span><span>${cat.name}</span>`;
+                categoryButtonContainer.appendChild(button);
+            });
+            
+            if (selectedCategory) {
+                const btn = categoryButtonContainer.querySelector(`[data-category="${selectedCategory}"]`);
+                if (btn) btn.classList.add('selected');
+                else selectedCategory = null;
+            }
+        };
+        
+        const renderHiddenCategories = () => {
+            hiddenCategoriesList.innerHTML = '';
+            if (hiddenCategories.length === 0) {
+                hiddenCategoriesList.innerHTML = `<li style="text-align: center; padding: 12px; color: #8b949e; font-size: 13px; font-style: italic;">無隱藏分類</li>`;
+                return;
+            }
+            hiddenCategories.forEach(catName => {
+                const cat = categories.find(c => c.name === catName);
+                if (cat) {
+                    const li = document.createElement('li');
+                    li.classList.add('hidden-category-item');
+                    li.innerHTML = `
+                        <span>${cat.emoji} ${cat.name}</span>
+                        <div>
+                            <button class="edit-category-btn" data-category="${cat.name}">修改</button>
+                            <button class="unhide-btn" data-category="${cat.name}">還原顯示</button>
+                        </div>
+                    `;
+                    hiddenCategoriesList.appendChild(li);
+                }
+            });
+        };
+
+        const showConfirmDialog = (message, onConfirm) => {
+            confirmMessage.textContent = message;
+            showModal(confirmDialog);
+            confirmYes.onclick = () => {
+                hideModal(confirmDialog);
+                onConfirm();
+            };
+            confirmNo.onclick = () => {
+                hideModal(confirmDialog);
+            };
+        };
+
+        const getFormattedCurrentTime = () => {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        };
+
+        const resetForm = () => {
+            expenseForm.reset();
+            timestampInput.value = getFormattedCurrentTime();
+            selectedCategory = null;
+            selectedPayer = null;
+            selectedCard = null;
+            editingId = null;
+            
+            document.querySelectorAll('.btn-option.selected').forEach(btn => btn.classList.remove('selected'));
+            cardTypeContainer.classList.remove('show');
+            
+            submitButton.innerHTML = `儲存至雲端 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="gradient-button-icon">
+                <path d="M5 12H19" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 5L19 12L12 19" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>`;
+            
+            document.querySelectorAll('#currencyButtonContainer .btn-option').forEach(btn => btn.classList.remove('selected'));
+            document.querySelector('[data-currency="JPY"]').classList.add('selected');
+            selectedCurrency = 'JPY';
+        };
+
+        const flashMessage = (message, isError = true) => {
+            errorMessage.textContent = message;
+            errorMessage.style.color = isError ? '#f85149' : '#58a6ff';
+            setTimeout(() => {
+                errorMessage.textContent = '';
+            }, 3000);
+        };
+
+        // --- Add/Edit Form Submit event ---
+        expenseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                flashMessage("儲存失敗：您已被登出，請重新登入！");
+                showScreen("login");
+                return;
+            }
+
+            const item = itemInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+
+            if (!item || isNaN(amount) || amount <= 0 || !selectedCategory || !selectedPayer) {
+                flashMessage('請完整填寫項目、金額、分類和支付人！');
+                triggerPhoneHaptic(40);
+                return;
+            }
+
+            const targetRecordId = editingId || generateIndependentRecordId();
+            
+            submitButton.innerHTML = '正在同步至雲端...';
+            submitButton.disabled = true;
+
+            const record = {
+                id: targetRecordId,
+                title: item,
+                amount: amount,
+                currency: selectedCurrency,
+                category: selectedCategory,
+                paymentMethod: selectedPayer,
+                cardName: (selectedPayer === '震' || selectedPayer === '沛') ? selectedCard : null,
+                date: timestampInput.value,
+                userId: currentUser.uid,
+                userEmail: currentUser.email,
+                createdAt: serverTimestamp()
+            };
+
+            const recordDocRef = doc(db, 'expenses', targetRecordId);
+
+            try {
+                if (editingId) {
+                    const origSnap = await getDoc(recordDocRef);
+                    if (origSnap.exists()) {
+                        const origData = origSnap.data();
+                        record.createdAt = origData.createdAt; // Retain immutable timestamp!
+                        record.userId = origData.userId; // Retain immutable uid!
+                        record.userEmail = origData.userEmail; // Retain immutable email!
+                    }
+                    await setDoc(recordDocRef, record);
+                    flashMessage('消費紀錄已成功於雲端同步更新！', false);
+                } else {
+                    await setDoc(recordDocRef, record);
+                    flashMessage('雲端儲存成功！', false);
+                    triggerPhoneHaptic(30);
+                }
+                createConfetti();
+                resetForm();
+            } catch (err) {
+                console.error("Failed to set document:", err);
+                handleFirestoreError(err, OperationType.WRITE, `expenses/${targetRecordId}`);
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
+        
+        // --- MOBILE OPTIMIZED TOUCH INTERACTIONS ---
+        categoryButtonContainer.addEventListener('touchstart', (e) => {
+            const btn = e.target.closest('.btn-option');
+            if (!btn) return;
+            
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            isMovingFinger = false;
+            activeCategoryElement = btn;
+            
+            longPressTimer = setTimeout(() => {
+                if (!isMovingFinger) {
+                    triggerPhoneHaptic(45);
+                    const rect = btn.getBoundingClientRect();
+                    longPressMenu.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                    longPressMenu.style.left = `${Math.min(rect.left + window.scrollX, window.innerWidth - 170)}px`;
+                    longPressMenu.classList.add('show');
+                }
+            }, 600);
+        });
+
+        categoryButtonContainer.addEventListener('touchmove', (e) => {
+            if (longPressTimer) {
+                const touch = e.touches[0];
+                const deltaX = Math.abs(touch.clientX - touchStartX);
+                const deltaY = Math.abs(touch.clientY - touchStartY);
+                if (deltaX > 8 || deltaY > 8) {
+                    isMovingFinger = true;
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            }
+        });
+
+        categoryButtonContainer.addEventListener('touchend', () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        });
+
+        // Mouse fallbacks
+        categoryButtonContainer.addEventListener('mousedown', (e) => {
+            const btn = e.target.closest('.btn-option');
+            if (!btn) return;
+            
+            touchStartX = e.clientX;
+            touchStartY = e.clientY;
+            isMovingFinger = false;
+            activeCategoryElement = btn;
+            
+            longPressTimer = setTimeout(() => {
+                if (!isMovingFinger) {
+                    const rect = btn.getBoundingClientRect();
+                    longPressMenu.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                    longPressMenu.style.left = `${Math.min(rect.left + window.scrollX, window.innerWidth - 170)}px`;
+                    longPressMenu.classList.add('show');
+                }
+            }, 600);
+        });
+
+        categoryButtonContainer.addEventListener('mousemove', (e) => {
+            if (longPressTimer) {
+                const deltaX = Math.abs(e.clientX - touchStartX);
+                const deltaY = Math.abs(e.clientY - touchStartY);
+                if (deltaX > 8 || deltaY > 8) {
+                    isMovingFinger = true;
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            }
+        });
+
+        categoryButtonContainer.addEventListener('mouseup', () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        });
+
+        categoryButtonContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-option');
+            if (!btn) return;
+            
+            if (longPressMenu.classList.contains('show')) {
+                return;
+            }
+            
+            const isSelected = btn.classList.contains('selected');
+            document.querySelectorAll('#categoryButtonContainer .btn-option').forEach(b => b.classList.remove('selected'));
+            
+            if (isSelected) {
+                selectedCategory = null;
+            } else {
+                btn.classList.add('selected');
+                selectedCategory = btn.dataset.category;
+                triggerPhoneHaptic(10);
+            }
+        });
+        
+        hideCategoryBtn.addEventListener('click', () => {
+            if (activeCategoryElement) {
+                const categoryName = activeCategoryElement.dataset.category;
+                showConfirmDialog(`確定要隱藏「${categoryName}」分類排版嗎？`, () => {
+                    hiddenCategories.push(categoryName);
+                    saveLocalPreferences();
+                    flashMessage(`分類項目「${categoryName}」已隱藏。`, false);
+                });
+            }
+            longPressMenu.classList.remove('show');
+            activeCategoryElement = null;
+        });
+
+        modifyCategoryBtn.addEventListener('click', () => {
+            if (activeCategoryElement) {
+                const categoryName = activeCategoryElement.dataset.category;
+                const cat = categories.find(c => c.name === categoryName);
+                if (cat) {
+                    modalTitle.textContent = "修改分類內容";
+                    saveCategoryBtn.textContent = "確認修改";
+                    newCategoryEmojiInput.value = cat.emoji;
+                    newCategoryNameInput.value = cat.name;
+                    newCategoryColorInput.value = cat.color;
+                    colorPreview.style.backgroundColor = cat.color;
+                    editingCategoryName = cat.name;
+                    
+                    renderHiddenCategories();
+                    showModal(addCategoryModal);
+                }
+            }
+            longPressMenu.classList.remove('show');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!longPressMenu.contains(e.target) && !categoryButtonContainer.contains(e.target)) {
+                longPressMenu.classList.remove('show');
+            }
+        });
+        
+        payerButtonContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (btn) {
+                const isSelected = btn.classList.contains('selected');
+                document.querySelectorAll('#payerButtonContainer .btn-option').forEach(b => b.classList.remove('selected'));
+                
+                if (!isSelected) {
+                    btn.classList.add('selected');
+                    selectedPayer = btn.dataset.payer;
+                    triggerPhoneHaptic(10);
+                    if (selectedPayer === '震' || selectedPayer === '沛') {
+                        cardTypeContainer.classList.add('show');
+                    } else {
+                        cardTypeContainer.classList.remove('show');
+                        selectedCard = null;
+                        document.querySelectorAll('#cardButtonContainer .btn-option').forEach(b => b.classList.remove('selected'));
+                    }
+                } else {
+                    selectedPayer = null;
+                    cardTypeContainer.classList.remove('show');
+                    selectedCard = null;
+                }
+            }
+        });
+
+        cardButtonContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (btn) {
+                const isSelected = btn.classList.contains('selected');
+                document.querySelectorAll('#cardButtonContainer .btn-option').forEach(b => b.classList.remove('selected'));
+                if (!isSelected) {
+                    btn.classList.add('selected');
+                    selectedCard = btn.dataset.card;
+                    triggerPhoneHaptic(10);
+                } else {
+                    selectedCard = null;
+                }
+            }
+        });
+
+        // Detail Modal triggers
+        recordList.addEventListener('click', (e) => {
+            const recordEl = e.target.closest('.summary-item');
+            if (!recordEl) return;
+            
+            const id = recordEl.dataset.id;
+            const record = records.find(r => String(r.id) === String(id));
+            if (record) {
+                editingId = id;
+                const recDate = new Date(record.date);
+                
+                modalContent.innerHTML = `
+                    <div style="display:flex; flex-direction:column; gap: 8px;">
+                        <div>🏷️ <strong>消費項目:</strong> ${record.title}</div>
+                        <div>📂 <strong>分類標籤:</strong> ${record.category || '未分類'}</div>
+                        <div style="font-size: 16px;">💰 <strong>金額幣值:</strong> <span style="font-family:var(--font-mono); color:#58a6ff; font-weight:700;">${record.currency === 'JPY' ? '¥' : '$'}${Number(record.amount || 0).toLocaleString()}</span></div>
+                        <div>👤 <strong>代墊付款:</strong> ${record.paymentMethod} ${record.cardName ? `(${record.cardName})` : ''}</div>
+                        <div>⏰ <strong>消費時間:</strong> ${recDate.toLocaleString()}</div>
+                        <div style="font-size:10px; border-top:1px dashed #30363d; padding-top:6px; color:#8b949e; font-family:var(--font-mono);">
+                            💾 寫入帳號: ${record.userEmail || '未知'}
+                        </div>
+                    </div>
+                `;
+                showModal(recordModal);
+            }
+        });
+
+        editRecordBtn.addEventListener('click', () => {
+            const recordToEdit = records.find(r => String(r.id) === String(editingId));
+            if (recordToEdit) {
+                itemInput.value = recordToEdit.title;
+                amountInput.value = recordToEdit.amount;
+                selectedCurrency = recordToEdit.currency;
+                timestampInput.value = recordToEdit.date;
+                selectedCategory = recordToEdit.category;
+                selectedPayer = recordToEdit.paymentMethod;
+                selectedCard = recordToEdit.cardName;
+                
+                document.querySelectorAll('.btn-option.selected').forEach(btn => btn.classList.remove('selected'));
+                
+                const categoryBtn = document.querySelector(`[data-category="${selectedCategory}"]`);
+                if (categoryBtn) categoryBtn.classList.add('selected');
+                
+                const currencyBtn = document.querySelector(`[data-currency="${selectedCurrency}"]`);
+                if (currencyBtn) currencyBtn.classList.add('selected');
+
+                const payerBtn = document.querySelector(`[data-payer="${selectedPayer}"]`);
+                if (payerBtn) payerBtn.classList.add('selected');
+
+                if (selectedPayer === '震' || selectedPayer === '沛') {
+                    cardTypeContainer.classList.add('show');
+                    const cardBtn = document.querySelector(`[data-card="${selectedCard}"]`);
+                    if (cardBtn) cardBtn.classList.add('selected');
+                } else {
+                    cardTypeContainer.classList.remove('show');
+                }
+
+                submitButton.innerHTML = `確認修改雲端項目 🖊️`;
+                hideModal(recordModal);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                triggerPhoneHaptic(15);
+            }
+        });
+
+        deleteRecordBtn.addEventListener('click', () => {
+            hideModal(recordModal);
+            showConfirmDialog('確定要在雲端刪除此筆消費嗎？', async () => {
+                const targetId = editingId;
+                try {
+                    await deleteDoc(doc(db, 'expenses', targetId));
+                    flashMessage('雲端項目已刪除。', false);
+                    resetForm();
+                } catch (err) {
+                    console.error("Delete doc failed:", err);
+                    handleFirestoreError(err, OperationType.DELETE, `expenses/${targetId}`);
+                }
+            });
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            hideModal(recordModal);
+            editingId = null;
+        });
+        
+        currencyButtonContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (btn) {
+                document.querySelectorAll('#currencyButtonContainer .btn-option').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedCurrency = btn.dataset.currency;
+                triggerPhoneHaptic(10);
+            }
+        });
+
+        // --- CSV EXPORT ENGINE (With UTF8 BOM for Excel) ---
+        exportCsvButton.addEventListener('click', () => {
+            if (records.length === 0) {
+                flashMessage('目前尚未有任何雲端記帳數據！');
+                return;
+            }
+            
+            const header = 'ID,消費時間,項目,分類,幣別,金額,支付方式,卡別,寫入帳號\n';
+            const rows = records.map(r => {
+                const escapeCsv = (str) => {
+                    if (str === null || str === undefined) return '';
+                    let s = String(str);
+                    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+                        return `"${s.replace(/"/g, '""')}"`;
+                    }
+                    return s;
+                };
+                return `${escapeCsv(r.id)},${escapeCsv(r.date)},${escapeCsv(r.title)},${escapeCsv(r.category)},${escapeCsv(r.currency)},${escapeCsv(r.amount)},${escapeCsv(r.paymentMethod)},${escapeCsv(r.cardName)},${escapeCsv(r.userEmail)}`;
+            }).join('\n');
+            
+            const csvContent = header + rows;
+            const bom = "\uFEFF"; 
+            const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            const today = new Date().toISOString().slice(0, 10);
+            link.setAttribute('download', `沖繩雲端記帳分帳表_${today}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            triggerPhoneHaptic(30);
+            flashMessage("雲端 CSV 報表匯出成功！已觸發瀏覽器下載！", false);
+        });
+
+        // Bulk Import parsing via CSV
+        importCsvButton.addEventListener('click', () => {
+            csvFileInput.click();
+            triggerPhoneHaptic(10);
+        });
+
+        csvFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                await parseAndBulkImportCsv(e.target.result);
+                csvFileInput.value = '';
+            };
+            reader.readAsText(file);
+        });
+
+        async function parseAndBulkImportCsv(csvContent) {
+            try {
+                const lines = csvContent.trim().split('\n');
+                if (lines.length === 0) {
+                    flashMessage('CSV 檔案為空。');
+                    return;
+                }
+                
+                lines.shift(); // remove header
+                let importCount = 0;
+                let skipCount = 0;
+
+                const currentUser = auth.currentUser;
+                if (!currentUser) return;
+
+                submitButton.innerHTML = '匯入大量資料中...';
+                submitButton.disabled = true;
+
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+                    
+                    const fields = [];
+                    let inQuote = false;
+                    let currentField = "";
+                    for (let i = 0; i < line.length; i++) {
+                        const char = line[i];
+                        if (char === '"') {
+                            if (i + 1 < line.length && line[i + 1] === '"') {
+                                currentField += '"';
+                                i++;
+                            } else {
+                                inQuote = !inQuote;
+                            }
+                        } else if (char === ',' && !inQuote) {
+                            fields.push(currentField.trim());
+                            currentField = "";
+                        } else {
+                            currentField += char;
+                        }
+                    }
+                    fields.push(currentField.trim());
+
+                    if (fields.length < 6) {
+                        skipCount++;
+                        continue;
+                    }
+
+                    const rawId = fields[0] ? fields[0].replace(/^"|"$/g, '').trim() : generateIndependentRecordId();
+                    const rawTimestamp = fields[1] ? fields[1].replace(/^"|"$/g, '').trim() : getFormattedCurrentTime();
+                    const rawItem = fields[2] ? fields[2].replace(/^"|"$/g, '').trim() : '未命名項';
+                    const rawDocCategory = fields[3] ? fields[3].replace(/^"|"$/g, '').trim() : '我哪知道';
+                    const rawCurrency = fields[4] ? fields[4].replace(/^"|"$/g, '').trim() : 'JPY';
+                    const rawAmount = Number(fields[5] ? fields[5].replace(/^"|"$/g, '').trim() : 0);
+                    const rawPayer = fields[6] ? fields[6].replace(/^"|"$/g, '').trim() : '現金';
+                    const rawCard = fields[7] ? fields[7].replace(/^"|"$/g, '').trim() : '';
+
+                    const record = {
+                        id: rawId,
+                        title: rawItem,
+                        amount: isNaN(rawAmount) ? 0 : rawAmount,
+                        currency: rawCurrency === 'TWD' ? 'TWD' : 'JPY',
+                        category: rawDocCategory,
+                        paymentMethod: rawPayer,
+                        cardName: rawCard || null,
+                        date: rawTimestamp,
+                        userId: currentUser.uid,
+                        userEmail: currentUser.email,
+                        createdAt: serverTimestamp()
+                    };
+
+                    try {
+                        await setDoc(doc(db, 'expenses', rawId), record);
+                        importCount++;
+                    } catch (e) {
+                        console.error("Bulk write ignore:", e);
+                        skipCount++;
+                    }
+                }
+
+                flashMessage(`匯入成功: 新增 ${importCount} 筆，未成功 ${skipCount} 筆！`, false);
+                createConfetti();
+                submitButton.disabled = false;
+                resetForm();
+            } catch (err) {
+                console.error("Import processing error: ", err);
+                flashMessage('讀取失敗，請確認檔案符合標準 CSV 格式！');
+                submitButton.disabled = false;
+            }
+        }
+        
+        // Category managers modals
+        manageCategoriesBtn.addEventListener('click', () => {
+            modalTitle.textContent = "管理與隱藏分類";
+            saveCategoryBtn.textContent = "新增分類項目";
+            newCategoryEmojiInput.value = '';
+            newCategoryNameInput.value = '';
+            newCategoryColorInput.value = '#3B82F6';
+            colorPreview.style.backgroundColor = '#3B82F6';
+            editingCategoryName = null;
+            
+            renderHiddenCategories();
+            showModal(addCategoryModal);
+        });
+        
+        addNewCategoryBtn.addEventListener('click', () => {
+            modalTitle.textContent = "新增分類項目";
+            saveCategoryBtn.textContent = "確認新增";
+            newCategoryEmojiInput.value = '';
+            newCategoryNameInput.value = '';
+            newCategoryColorInput.value = '#3B82F6';
+            colorPreview.style.backgroundColor = '#3B82F6';
+            editingCategoryName = null;
+            
+            renderHiddenCategories();
+            showModal(addCategoryModal);
+        });
+
+        newCategoryColorInput.addEventListener('input', (e) => {
+            colorPreview.style.backgroundColor = e.target.value;
+        });
+
+        saveCategoryBtn.addEventListener('click', () => {
+            const emoji = newCategoryEmojiInput.value.trim();
+            const name = newCategoryNameInput.value.trim();
+            const color = newCategoryColorInput.value.trim();
+            
+            if (!emoji || !name || !color) {
+                flashMessage('請填寫所有分類欄位 (符號、名稱、顏色)！', true);
+                return;
+            }
+            
+            if (editingCategoryName) {
+                const categoryToUpdate = categories.find(c => c.name === editingCategoryName);
+                if (categoryToUpdate) {
+                    if (name !== editingCategoryName && categories.some(c => c.name === name)) {
+                        flashMessage('此分類名稱已存在！', true);
+                        return;
+                    }
+                    
+                    categoryToUpdate.emoji = emoji;
+                    categoryToUpdate.color = color;
+                    categoryToUpdate.name = name;
+                    
+                    const hiddenIndex = hiddenCategories.indexOf(editingCategoryName);
+                    if (hiddenIndex > -1) {
+                        hiddenCategories[hiddenIndex] = name;
+                    }
+                    flashMessage(`分類「${name}」已成功變更。`, false);
+                }
+            } else {
+                const existingCategory = categories.find(c => c.name === name);
+                if (existingCategory) {
+                    flashMessage('此分類名稱已存在列表中！', true);
+                    return;
+                }
+                categories.push({ name, emoji, color });
+                flashMessage(`新分類項目「${name}」已成功新增！`, false);
+            }
+
+            editingCategoryName = null;
+            saveLocalPreferences();
+            hideModal(addCategoryModal);
+        });
+
+        cancelCategoryBtn.addEventListener('click', () => {
+            hideModal(addCategoryModal);
+        });
+        
+        hiddenCategoriesList.addEventListener('click', (e) => {
+            const unhideBtn = e.target.closest('.unhide-btn');
+            const editBtn = e.target.closest('.edit-category-btn');
+
+            if (unhideBtn) {
+                const categoryName = unhideBtn.dataset.category;
+                hiddenCategories = hiddenCategories.filter(cat => cat !== categoryName);
+                saveLocalPreferences();
+                renderHiddenCategories();
+                flashMessage(`「${categoryName}」分類選鈕已復原顯示。`, false);
+                triggerPhoneHaptic(10);
+            } else if (editBtn) {
+                const categoryName = editBtn.dataset.category;
+                const cat = categories.find(c => c.name === categoryName);
+                if (cat) {
+                    modalTitle.textContent = "修改分類內容";
+                    saveCategoryBtn.textContent = "確認修改";
+                    newCategoryEmojiInput.value = cat.emoji;
+                    newCategoryNameInput.value = cat.name;
+                    newCategoryColorInput.value = cat.color;
+                    colorPreview.style.backgroundColor = cat.color;
+                    editingCategoryName = cat.name;
+                }
+            }
+        });
+
+        exchangeRateInput.addEventListener('change', () => {
+            let rate = parseFloat(exchangeRateInput.value);
+            if (isNaN(rate) || rate <= 0) {
+                rate = 0.2;
+                exchangeRateInput.value = 0.2;
+            }
+            exchangeRate = rate;
+            localStorage.setItem('exchangeRate', rate);
+            calculateAndRenderDashboard();
+            renderRecords();
+        });
+
+        // --- Interactive Analytics Panel ---
+        const showAnalysis = () => {
+            if (records.length === 0) {
+                flashMessage('目前無任何記帳數據以供分析！', false);
+                return;
+            }
+            
+            const filteredRecords = records.filter(r => r.paymentMethod !== '交通卡');
+            if (filteredRecords.length === 0) {
+                flashMessage('目前無足夠消費支出以作圖表分析！', false);
+                return;
+            }
+
+            anaTotalCount.textContent = `${filteredRecords.length} 筆`;
+
+            let maxExpenseVal = -1;
+            let maxExpenseItem = "無";
+            let totalConvertedTwd = 0;
+            
+            const categorySums = {};
+            const paymentSums = {};
+
+            filteredRecords.forEach(r => {
+                const amt = Number(r.amount) || 0;
+                const twdAmt = r.currency === 'JPY' ? (amt * exchangeRate) : amt;
+                totalConvertedTwd += twdAmt;
+
+                if (twdAmt > maxExpenseVal) {
+                    maxExpenseVal = twdAmt;
+                    const currencySymbol = r.currency === 'JPY' ? '¥' : '$';
+                    maxExpenseItem = `${r.title} (${currencySymbol}${amt.toLocaleString()})`;
+                }
+
+                categorySums[r.category || '其它'] = (categorySums[r.category || '其它'] || 0) + twdAmt;
+
+                const payKey = `${r.paymentMethod}${r.cardName ? ' (' + r.cardName + ')' : ''}`;
+                paymentSums[payKey] = (paymentSums[payKey] || 0) + twdAmt;
+            });
+
+            anaMaxExpense.textContent = maxExpenseItem;
+            const avgVal = totalConvertedTwd / filteredRecords.length;
+            anaAvgExpense.textContent = `NT$ ${Math.round(avgVal).toLocaleString()}`;
+
+            let topCat = "無";
+            let topCatMax = -1;
+            for (const cat in categorySums) {
+                if (categorySums[cat] > topCatMax) {
+                    topCatMax = categorySums[cat];
+                    topCat = cat;
+                }
+            }
+            const matchCat = categories.find(c => c.name === topCat);
+            anaTopCategory.textContent = matchCat ? `${matchCat.emoji} ${topCat}` : topCat;
+
+            renderCategoryChart(categorySums);
+            renderPaymentChart(paymentSums);
+            renderDailyTrendChart(filteredRecords);
+
+            showModal(analysisModal);
+        };
+
+        const renderCategoryChart = (categorySums) => {
+            if (categoryChart) categoryChart.destroy();
+
+            const ctx = document.getElementById('categoryDistributionChart').getContext('2d');
+            const labels = [];
+            const data = [];
+            const backgroundColors = [];
+
+            for (const catName in categorySums) {
+                const catDef = categories.find(c => c.name === catName) || { emoji: '🤷', color: '#4b5563' };
+                labels.push(`${catDef.emoji} ${catName}`);
+                data.push(Math.round(categorySums[catName]));
+                backgroundColors.push(catDef.color || '#4b5563');
+            }
+
+            categoryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderWidth: 1,
+                        borderColor: '#161b22'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#c9d1d9',
+                                font: { size: 10, family: 'Inter' }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ${context.label}: NT$ ${context.parsed.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+
+        const renderPaymentChart = (paymentSums) => {
+            if (paymentChart) paymentChart.destroy();
+
+            const ctx = document.getElementById('paymentDistributionChart').getContext('2d');
+            const labels = [];
+            const data = [];
+            
+            const payerColors = {
+                '震': '#58a6ff',
+                '沛': '#ff7b72',
+                '現金': '#e3b341',
+                '其它': '#8b949e'
+            };
+            const backgroundColors = [];
+            let colorIdx = 0;
+            const extraColors = ['#bc8cff', '#56db81', '#ff9b72', '#7ee787'];
+
+            for (const payKey in paymentSums) {
+                labels.push(payKey);
+                data.push(Math.round(paymentSums[payKey]));
+                
+                let assignedColor = '#8b949e';
+                for (const baseKey in payerColors) {
+                    if (payKey.includes(baseKey)) {
+                        assignedColor = payerColors[baseKey];
+                        break;
+                    }
+                }
+                if (assignedColor === '#8b949e') {
+                    assignedColor = extraColors[colorIdx % extraColors.length];
+                    colorIdx++;
+                }
+                backgroundColors.push(assignedColor);
+            }
+
+            paymentChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderWidth: 1,
+                        borderColor: '#161b22'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#c9d1d9',
+                                font: { size: 10, family: 'Inter' }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ${context.label}: NT$ ${context.parsed.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+
+        const renderDailyTrendChart = (filteredRecords) => {
+            if (dailyChart) dailyChart.destroy();
+
+            const ctx = document.getElementById('dailyTrendChart').getContext('2d');
+            const dailySums = {};
+            const chronologicalRecords = [...filteredRecords].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+            chronologicalRecords.forEach(r => {
+                const date = new Date(r.date);
+                const key = isNaN(date.getTime()) ? r.date.slice(5, 10).replace('-', '/') : `${date.getMonth() + 1}/${date.getDate()}`;
+                const amt = Number(r.amount) || 0;
+                const twdAmt = r.currency === 'JPY' ? (amt * exchangeRate) : amt;
+                
+                dailySums[key] = (dailySums[key] || 0) + twdAmt;
+            });
+
+            const labels = Object.keys(dailySums);
+            const data = Object.values(dailySums).map(v => Math.round(v));
+
+            dailyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '每日消費 (TWD)',
+                        data: data,
+                        borderColor: '#58a6ff',
+                        backgroundColor: 'rgba(88, 166, 255, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#58a6ff',
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { color: '#21262d' },
+                            ticks: { color: '#8b949e', font: { size: 9 } }
+                        },
+                        y: {
+                            grid: { color: '#21262d' },
+                            ticks: { color: '#8b949e', font: { size: 9 } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` 當日總額: NT$ ${context.parsed.y.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+
+        overallTotalCard.addEventListener('click', showAnalysis);
+        closeAnalysisModalBtn.addEventListener('click', () => hideModal(analysisModal));
+        closeAnalysisModalIcon.addEventListener('click', () => hideModal(analysisModal));
+    });
+</script>
+<script>
+    // SWALLOWING THE PREVIOUS CODE
+    function obsoleteAppLoader() {
+        // Core elements
+        const expenseForm = document.getElementById('expenseForm');
+        const submitButton = document.getElementById('submitButton');
+        const itemInput = document.getElementById('item');
+        const amountInput = document.getElementById('amount');
+        const currencyButtonContainer = document.getElementById('currencyButtonContainer');
+        const timestampInput = document.getElementById('timestamp');
+        const recordList = document.getElementById('recordList');
+        const categoryButtonContainer = document.getElementById('categoryButtonContainer');
+        const payerButtonContainer = document.getElementById('payerButtonContainer');
+        const cardButtonContainer = document.getElementById('cardButtonContainer');
+        const cardTypeContainer = document.getElementById('cardTypeContainer');
+        const currentDeviceBadge = document.getElementById('currentDeviceBadge');
+        
+        // Modals
+        const recordModal = document.getElementById('recordModal');
+        const modalContent = document.getElementById('modalContent');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const editRecordBtn = document.getElementById('editRecordBtn');
+        const deleteRecordBtn = document.getElementById('deleteRecordBtn');
+        
+        const confirmDialog = document.getElementById('confirmDialog');
+        const confirmMessage = document.getElementById('confirmMessage');
+        const confirmYes = document.getElementById('confirmYes');
+        const confirmNo = document.getElementById('confirmNo');
+        
+        const exportCsvButton = document.getElementById('exportCsv');
+        const importCsvButton = document.getElementById('importCsv');
+        const csvFileInput = document.getElementById('csvFileInput');
+        const errorMessage = document.getElementById('error-message');
+        const confettiContainer = document.getElementById('confetti-container');
+        
+        // Categories & Management
+        const addNewCategoryBtn = document.getElementById('addNewCategoryBtn');
+        const manageCategoriesBtn = document.getElementById('manageCategoriesBtn');
+        const addCategoryModal = document.getElementById('addCategoryModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const newCategoryEmojiInput = document.getElementById('newCategoryEmoji');
+        const newCategoryNameInput = document.getElementById('newCategoryName');
+        const newCategoryColorInput = document.getElementById('newCategoryColor');
+        const colorPreview = document.getElementById('colorPreview');
+        const saveCategoryBtn = document.getElementById('saveCategoryBtn');
+        const cancelCategoryBtn = document.getElementById('cancelCategoryBtn');
+        const hiddenCategoriesList = document.getElementById('hiddenCategoriesList');
+        
+        // Context Actions
+        const longPressMenu = document.getElementById('longPressMenu');
+        const hideCategoryBtn = document.getElementById('hideCategoryBtn');
+        const modifyCategoryBtn = document.getElementById('modifyCategoryBtn');
+        
+        // Dashboard Stats elements
+        const dashboardTotalJpy = document.getElementById('dashboardTotalJpy');
+        const dashboardTotalTwd = document.getElementById('dashboardTotalTwd');
+        const dbSubJpy = document.getElementById('dbSubJpy');
+        const dbSubTwd = document.getElementById('dbSubTwd');
+        const splitResultCard = document.getElementById('splitResultCard');
+        
+        // New interactive elements for overall totals, exchange rates and analytics
+        const exchangeRateInput = document.getElementById('exchangeRateInput');
+        const overallTotalCard = document.getElementById('overallTotalCard');
+        const dashboardOverallTotalTwd = document.getElementById('dashboardOverallTotalTwd');
+        const overallJpySum = document.getElementById('overallJpySum');
+        const overallTwdSum = document.getElementById('overallTwdSum');
+        
+        const analysisModal = document.getElementById('analysisModal');
+        const closeAnalysisModalIcon = document.getElementById('closeAnalysisModalIcon');
+        const closeAnalysisModalBtn = document.getElementById('closeAnalysisModalBtn');
+        const anaMaxExpense = document.getElementById('anaMaxExpense');
+        const anaTopCategory = document.getElementById('anaTopCategory');
+        const anaAvgExpense = document.getElementById('anaAvgExpense');
+        const anaTotalCount = document.getElementById('anaTotalCount');
+
+        // State variables
+        let records = [];
+        let selectedCategory = null;
+        let selectedPayer = null;
+        let selectedCard = null;
+        let selectedCurrency = 'JPY';
+        let exchangeRate = 0.2; // Default conversion rate JPY to TWD
+
+        // Chart instances
+        let categoryChart = null;
+        let paymentChart = null;
+        let dailyChart = null;
+        
+        // Track the actively selected item's (composite key) targeting elements
+        let editingId = null;
+        let editingDeviceId = null;
+        
+        // List of default categories
+        let categories = [
+            { name: "美食飲料", emoji: "🍣", color: "#EA580C" },
+            { name: "衣服飾品", emoji: "👕", color: "#2563EB" },
+            { name: "當地住宿", emoji: "🏠", color: "#10B981" },
+            { name: "大眾運輸", emoji: "🚌", color: "#FFFFFF" },
+            { name: "門票費用", emoji: "🤿", color: "#0D9488" },
+            { name: "神社參拜", emoji: "⛩️", color: "#C83232" },
+            { name: "紀念品", emoji: "🗾", color: "#7878FF" },
+            { name: "伴手禮", emoji: "🎁", color: "#F0A30A" },
+            { name: "我哪知道", emoji: "🤷", color: "#4B5563" },
+            { name: "去程機票", emoji: "✈️", color: "#388BFD" },
+            { name: "回程機票", emoji: "✈️", color: "#388BFD" }
+        ];
+
+        let hiddenCategories = [];
+        
+        // Scrolling & Long Press Optimizations for Mobile
+        let longPressTimer = null;
+        let activeCategoryElement = null;
+        let editingCategoryName = null;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let isMovingFinger = false;
+        
+        // 1. Core Device ID Setup
+        const getOrCreateDeviceId = () => {
+            let dId = localStorage.getItem('deviceId');
+            if (!dId) {
+                // Return a clear, human-scannable unique 6-character random text + timestamp representation
+                const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+                dId = `DEV-${randomPart}`;
+                localStorage.setItem('deviceId', dId);
+            }
+            return dId;
+        };
+
+        const activeDeviceId = getOrCreateDeviceId();
+        
+        // Display Device identifier clearly in top header
+        currentDeviceBadge.innerHTML = `📱 本機裝置編號: <strong>${activeDeviceId}</strong>`;
+
+        // 2. Mathematically Independent ID Generation
+        const generateIndependentRecordId = () => {
+            const timePart = Date.now();
+            const saltPart = Math.random().toString(36).substring(2, 7).toUpperCase();
+            return `EXP-${timePart}-${saltPart}`;
+        };
+
+        // Haptic Feedback wrapper for phone controllers
+        const triggerPhoneHaptic = (ms = 15) => {
+            if (navigator.vibrate) {
+                navigator.vibrate(ms);
+            }
+        };
+
+        // Modal Open/Close handling animations
+        const showModal = (modalElement) => {
+            modalElement.classList.add('show');
+            triggerPhoneHaptic(10);
+        };
+
+        const hideModal = (modalElement) => {
+            modalElement.classList.remove('show');
+        };
+
+        // Load Persistent local storage packages
+        const loadData = () => {
+            const storedRecords = localStorage.getItem('expenses');
+            if (storedRecords) {
+                records = JSON.parse(storedRecords);
+                // Ensure all legacy loaded item objects have a valid device id structure
+                records.forEach(r => {
+                    if (!r.deviceId) r.deviceId = "legacy_import";
+                });
+            }
+            const storedRate = localStorage.getItem('exchangeRate');
+            if (storedRate) {
+                exchangeRate = parseFloat(storedRate) || 0.2;
+            }
+            exchangeRateInput.value = exchangeRate;
+
+            const storedCategories = localStorage.getItem('categories');
+            if (storedCategories) {
+                categories = JSON.parse(storedCategories);
+            }
+            const storedHiddenCategories = localStorage.getItem('hiddenCategories');
+            if (storedHiddenCategories) {
+                hiddenCategories = JSON.parse(storedHiddenCategories);
+            }
+        };
+
+        // Save data structures to state and recalibrate metrics
+        const saveAndRender = () => {
+            records.sort((a, b) => {
+                const dateA = new Date(a.timestamp);
+                const dateB = new Date(b.timestamp);
+                if (dateA.getTime() !== dateB.getTime()) {
+                    return dateB.getTime() - dateA.getTime();
+                }
+                return String(b.id).localeCompare(String(a.id));
+            });
+            
+            localStorage.setItem('expenses', JSON.stringify(records));
+            localStorage.setItem('categories', JSON.stringify(categories));
+            localStorage.setItem('hiddenCategories', JSON.stringify(hiddenCategories));
+            
+            renderRecords();
+            renderCategoryButtons();
+            calculateAndRenderDashboard();
+        };
+
+        // 3. Auto Splits & Dashboard Math Calculations (50/50 shared pre-payments split)
+        const calculateAndRenderDashboard = () => {
+            let totalJpy = 0;
+            let totalTwd = 0;
+            
+            let jpyZhen = 0;
+            let jpyPei = 0;
+            let jpyCash = 0;
+            
+            let twdZhen = 0;
+            let twdPei = 0;
+            let twdCash = 0;
+            
+            records.forEach(r => {
+                if (r.payer === '交通卡') return; // Exclude transportation cards from all summaries
+                
+                const amt = Number(r.amount) || 0;
+                if (r.currency === 'JPY') {
+                    totalJpy += amt;
+                    if (r.payer === '震') jpyZhen += amt;
+                    if (r.payer === '沛') jpyPei += amt;
+                    if (r.payer === '現金') jpyCash += amt;
+                } else {
+                    totalTwd += amt;
+                    if (r.payer === '震') twdZhen += amt;
+                    if (r.payer === '沛') twdPei += amt;
+                    if (r.payer === '現金') twdCash += amt;
+                }
+            });
+
+            // Calculate Overall Total TWD-converted consumption
+            const overallTotalTwd = (totalJpy * exchangeRate) + totalTwd;
+
+            // Update interactive overall consumption elements
+            dashboardOverallTotalTwd.textContent = `NT$ ${Math.round(overallTotalTwd).toLocaleString()}`;
+            overallJpySum.textContent = `日幣總計: ¥${totalJpy.toLocaleString(undefined, {maximumFractionDigits: 1})}`;
+            overallTwdSum.textContent = `台幣總計: $${totalTwd.toLocaleString(undefined, {maximumFractionDigits: 1})}`;
+
+            // Update DOM Total counters
+            dashboardTotalJpy.textContent = `¥${totalJpy.toLocaleString(undefined, {maximumFractionDigits: 1})}`;
+            dashboardTotalTwd.textContent = `$${totalTwd.toLocaleString(undefined, {maximumFractionDigits: 1})}`;
+            
+            // Sub totals displays
+            dbSubJpy.innerHTML = `<span>震付: ¥${jpyZhen.toLocaleString()}</span><span>沛付: ¥${jpyPei.toLocaleString()}</span><span>現金: ¥${jpyCash.toLocaleString()}</span>`;
+            dbSubTwd.innerHTML = `<span>震付: $${twdZhen.toLocaleString()}</span><span>沛付: $${twdPei.toLocaleString()}</span><span>現金: $${twdCash.toLocaleString()}</span>`;
+            
+            // Create Splitting prescription HTML
+            // Assuming Zhen and Pei shared items that are personally pre-paid.
+            // Items are shared 50/50.
+            const jpyDiff = Math.abs(jpyZhen - jpyPei) / 2;
+            const twdDiff = Math.abs(twdZhen - twdPei) / 2;
+           /* 
+            let splitTextHtml = `<strong>💡 沖繩分帳平衡分析（代墊款採 1/2 平均拆帳，不含現金）：</strong><br>`;
+            
+            if (jpyDiff === 0 && twdDiff === 0 && jpyZhen === 0 && jpyPei === 0 && twdZhen === 0 && twdPei === 0) {
+                splitTextHtml += `<span style="color:#8b949e">目前尚無個人代墊款項統計。</span>`;
+            } else {
+                splitTextHtml += `<div style="margin-top: 6px; padding-left: 2px;">`;
+                
+                // JPY Split Statement
+                if (jpyZhen > jpyPei) {
+                    splitTextHtml += `• 日圓部份：🐌 <strong>沛</strong> 應給 🐛 <strong>震</strong> <span style="color: #58a6ff; font-family: var(--font-mono); font-weight:700;">¥${jpyDiff.toLocaleString(undefined, {maximumFractionDigits: 1})}</span><br>`;
+                } else if (jpyPei > jpyZhen) {
+                    splitTextHtml += `• 日圓部份：🐛 <strong>震</strong> 應給 🐌 <strong>沛</strong> <span style="color: #58a6ff; font-family: var(--font-mono); font-weight:700;">¥${jpyDiff.toLocaleString(undefined, {maximumFractionDigits: 1})}</span><br>`;
+                } else {
+                    splitTextHtml += `• 日圓部份：雙方代墊金額相同，不需補給！<br>`;
+                }
+                
+                // TWD Split Statement
+                if (twdZhen > twdPei) {
+                    splitTextHtml += `• 台幣部份：🐌 <strong>沛</strong> 應給 🐛 <strong>震</strong> <span style="color: #58a6ff; font-family: var(--font-mono); font-weight:700;">$${twdDiff.toLocaleString(undefined, {maximumFractionDigits: 1})}</span>`;
+                } else if (twdPei > twdZhen) {
+                    splitTextHtml += `• 台幣部份：🐛 <strong>震</strong> 應給 🐌 <strong>沛</strong> <span style="color: #58a6ff; font-family: var(--font-mono); font-weight:700;">$${twdDiff.toLocaleString(undefined, {maximumFractionDigits: 1})}</span>`;
+                } else {
+                    splitTextHtml += `• 台幣部份：雙方代墊金額相同，不需補給！`;
+                }
+                
+                splitTextHtml += `</div>`;
+            }
+            
+            if (splitResultCard) {
+                splitResultCard.innerHTML = splitTextHtml;
+            }
+            */
+        };
+        // Render consumer expense records
+        const renderRecords = () => {
+            recordList.innerHTML = '';
+            if (records.length === 0) {
+                recordList.innerHTML = `<div style="text-align: center; color: #8b949e; padding: 40px 20px; font-size: 14px;">🌴 尚無消費紀錄。來新增第一筆沖繩開銷吧！</div>`;
+                return;
+            }
+            
+            records.forEach((record, index) => {
+                const recordEl = document.createElement('div');
+                recordEl.classList.add('summary-item');
+                recordEl.dataset.id = record.id;
+                recordEl.dataset.deviceId = record.deviceId || 'legacy_import';
+                
+                const date = new Date(record.timestamp);
+                const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
+                const formattedTime = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+                
+                const currencySymbol = record.currency === 'JPY' ? '¥' : '$';
+                const formattedAmount = `${currencySymbol}${Number(record.amount || 0).toLocaleString()}`;
+                
+                const categoryInfo = categories.find(c => c.name === record.category) || { emoji: '🤷', color: '#4B5563' };
+                const bgColor = categoryInfo.color ? `${categoryInfo.color}22` : "#4B556322";
+                const strokeColor = categoryInfo.color || "#4b5563";
+
+                // Setup dynamic category-color custom variables for high-fidelity border glows & glowing hover halos
+                const hexColor = categoryInfo.color || "#4b5563";
+                recordEl.style.setProperty('--cat-color', hexColor);
+                recordEl.style.setProperty('--cat-color-alpha10', `${hexColor}1a`);
+                recordEl.style.setProperty('--cat-color-alpha08', `${hexColor}14`);
+                recordEl.style.setProperty('--cat-color-alpha30', `${hexColor}4d`);
+                
+                // Stagger transition slide-ins slightly for professional look
+                recordEl.style.animationDelay = `${index * 0.04}s`;
+                
+                // Format price text with dual-display TWD equivalents for JPY entries
+                let priceContentHtml = `<div class="summary-item-price">${formattedAmount}</div>`;
+                if (record.currency === 'JPY') {
+                    const convertedTwd = Math.round(Number(record.amount || 0) * exchangeRate);
+                    priceContentHtml += `<div class="summary-item-converted-price">≈ NT$${convertedTwd.toLocaleString()}</div>`;
+                }
+                
+                // Label which device created this item if helpful
+                const isFromMyDevice = record.deviceId === activeDeviceId;
+                const deviceLabel = record.deviceId ? (isFromMyDevice ? '本機' : record.deviceId.slice(-4)) : '未知';
+                
+                recordEl.innerHTML = `
+                    <div class="summary-item-content">
+                        <div class="summary-item-bg-text">${record.category || '其它'}</div>
+                        <div class="summary-item-img" style="background-color: ${bgColor}; border: 1px solid ${strokeColor}">${categoryInfo.emoji}</div>
+                        <div class="summary-item-details">
+                            <div class="summary-item-name">${record.item}</div>
+                            <div class="summary-item-variant">
+                                <span>👤 ${record.payer}${record.card ? " • " + record.card : ""}</span>
+                                <span style="background: #21262d; padding: 1px 4px; border-radius: 4px; font-size:10px; font-family: var(--font-mono); color: #8b949e;">${deviceLabel}</span>
+                            </div>
+                        </div>
+                        <div class="summary-item-price-and-time">
+                            ${priceContentHtml}
+                            <div class="summary-item-date-time">${formattedDate} ${formattedTime}</div>
+                        </div>
+                    </div>
+                `;
+                recordList.appendChild(recordEl);
+            });
+        };
+
+        // Render categorizer badges
+        const renderCategoryButtons = () => {
+            const allCategories = categories.filter(c => !hiddenCategories.includes(c.name));
+            
+            // Keep the "+ Add Category" button always
+            categoryButtonContainer.innerHTML = '';
+            
+            allCategories.forEach(cat => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.classList.add('btn-option', 'text-sm');
+                button.dataset.category = cat.name;
+                button.innerHTML = `<span>${cat.emoji}</span><span>${cat.name}</span>`;
+                categoryButtonContainer.appendChild(button);
+            });
+            
+            // Reselect category if selected
+            if (selectedCategory) {
+                const btn = categoryButtonContainer.querySelector(`[data-category="${selectedCategory}"]`);
+                if (btn) btn.classList.add('selected');
+                else selectedCategory = null;
+            }
+        };
+        
+        // Hidden items category loader inside config
+        const renderHiddenCategories = () => {
+            hiddenCategoriesList.innerHTML = '';
+            if (hiddenCategories.length === 0) {
+                hiddenCategoriesList.innerHTML = `<li style="text-align: center; padding: 12px; color: #8b949e; font-size: 13px; font-style: italic;">無隱藏分類</li>`;
+                return;
+            }
+            hiddenCategories.forEach(catName => {
+                const cat = categories.find(c => c.name === catName);
+                if (cat) {
+                    const li = document.createElement('li');
+                    li.classList.add('hidden-category-item');
+                    li.innerHTML = `
+                        <span>${cat.emoji} ${cat.name}</span>
+                        <div>
+                            <button class="edit-category-btn" data-category="${cat.name}">修改</button>
+                            <button class="unhide-btn" data-category="${cat.name}">還原顯示</button>
+                        </div>
+                    `;
+                    hiddenCategoriesList.appendChild(li);
+                }
+            });
+        };
+
+        // Confirmation Overlay Box
+        const showConfirmDialog = (message, onConfirm) => {
+            confirmMessage.textContent = message;
+            showModal(confirmDialog);
+            
+            confirmYes.onclick = () => {
+                hideModal(confirmDialog);
+                onConfirm();
+            };
+            confirmNo.onclick = () => {
+                hideModal(confirmDialog);
+            };
+        };
+
+        // Format system current local dates ISO style
+        const getFormattedCurrentTime = () => {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        };
+
+        // Clear forms input values cleanly
+        const resetForm = () => {
+            expenseForm.reset();
+            timestampInput.value = getFormattedCurrentTime();
+            selectedCategory = null;
+            selectedPayer = null;
+            selectedCard = null;
+            editingId = null;
+            editingDeviceId = null;
+            
+            document.querySelectorAll('.btn-option.selected').forEach(btn => btn.classList.remove('selected'));
+            cardTypeContainer.classList.remove('show');
+            
+            submitButton.innerHTML = `儲存至本機 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="gradient-button-icon">
+                <path d="M5 12H19" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 5L19 12L12 19" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>`;
+            
+            document.querySelectorAll('#currencyButtonContainer .btn-option').forEach(btn => btn.classList.remove('selected'));
+            document.querySelector('[data-currency="JPY"]').classList.add('selected');
+            selectedCurrency = 'JPY';
+        };
+
+        // Micro dialogs alerts
+        const flashMessage = (message, isError = true) => {
+            errorMessage.textContent = message;
+            errorMessage.style.color = isError ? '#f85149' : '#58a6ff';
+            setTimeout(() => {
+                errorMessage.textContent = '';
+            }, 3000);
+        };
+
+        // 4. Robust import strategies for standard or cross-device datasets
+        const parseAndImportCsv = (csvContent) => {
+            try {
+                const lines = csvContent.trim().split('\n');
+                if (lines.length === 0) {
+                    flashMessage('CSV 檔案為空。');
+                    return;
+                }
+                
+                // Read CSV header to map column layouts
+                const headerLine = lines.shift() || "";
+                
+                // Record check indices
+                const existingIdDeviceMap = new Set(records.map(r => `${r.id}_${r.deviceId || 'legacy_import'}`));
+                let importedCount = 0;
+                let skippedCount = 0;
+                const newRecords = [];
+                
+                lines.forEach(line => {
+                    if (!line.trim()) return;
+                    
+                    // Parse quotes & commas properly in fields
+                    const fields = [];
+                    let inQuote = false;
+                    let currentField = "";
+                    for (let i = 0; i < line.length; i++) {
+                        const char = line[i];
+                        if (char === '"') {
+                            if (i + 1 < line.length && line[i + 1] === '"') {
+                                currentField += '"';
+                                i++;
+                            } else {
+                                inQuote = !inQuote;
+                            }
+                        } else if (char === ',' && !inQuote) {
+                            fields.push(currentField.trim());
+                            currentField = "";
+                        } else {
+                            currentField += char;
+                        }
+                    }
+                    fields.push(currentField.trim());
+                    
+                    if (fields.length < 6) {
+                        skippedCount++;
+                        return;
+                    }
+
+                    // Field Mapping: ID,消費時間,項目,分類,幣別,金額,支付方式,卡別,裝置ID
+                    const rawId = fields[0] ? fields[0].replace(/^"|"$/g, '').trim() : '';
+                    const rawTimestamp = fields[1] ? fields[1].replace(/^"|"$/g, '').trim() : '';
+                    const rawItem = fields[2] ? fields[2].replace(/^"|"$/g, '').trim() : '未命名支出';
+                    const rawCategory = fields[3] ? fields[3].replace(/^"|"$/g, '').trim() : '我哪知道';
+                    const rawCurrency = fields[4] ? fields[4].replace(/^"|"$/g, '').trim() : 'JPY';
+                    const rawAmount = Number(fields[5] ? fields[5].replace(/^"|"$/g, '').trim() : 0);
+                    const rawPayer = fields[6] ? fields[6].replace(/^"|"$/g, '').trim() : '現金';
+                    const rawCard = fields[7] ? fields[7].replace(/^"|"$/g, '').trim() : '';
+                    
+                    // 9th column: deviceId
+                    let rawDeviceId = fields[8] ? fields[8].replace(/^"|"$/g, '').trim() : 'legacy_import';
+                    if (!rawDeviceId) rawDeviceId = 'legacy_import';
+
+                    if (!rawId) {
+                        skippedCount++;
+                        return;
+                    }
+
+                    const compositeKey = `${rawId}_${rawDeviceId}`;
+
+                    // CHECK DUPLICATES: Only skip if SAME deviceId AND SAME recordId already exists!
+                    // If same sequential ID but DIFFERENT deviceId, import it!
+                    if (existingIdDeviceMap.has(compositeKey)) {
+                        skippedCount++;
+                        return;
+                    }
+                   
+                    newRecords.push({
+                        id: rawId,
+                        item: rawItem,
+                        amount: isNaN(rawAmount) ? 0 : rawAmount,
+                        currency: rawCurrency === 'TWD' ? 'TWD' : 'JPY',
+                        category: rawCategory,
+                        payer: rawPayer,
+                        card: rawCard || null,
+                        timestamp: rawTimestamp || getFormattedCurrentTime(),
+                        deviceId: rawDeviceId
+                    });
+                    
+                    importedCount++;
+                    existingIdDeviceMap.add(compositeKey);
+                });
+                
+                if (newRecords.length > 0) {
+                    records.push(...newRecords);
+                    saveAndRender();
+                    flashMessage(`成功匯入 ${importedCount} 筆，跳過 ${skippedCount} 筆重覆記錄！`, false);
+                    createConfetti();
+                } else {
+                    flashMessage('所有資料皆已重覆，已自動跳過。', false);
+                }
+            } catch (e) {
+                console.error(e);
+                flashMessage('讀取失敗，請確認檔案符合 CSV 標準格式。');
+            }
+        };
+        
+        // Confetti Canvas Particle Spawner
+        function createConfetti() {
+            confettiContainer.style.display = 'block';
+            const colors = ['#58a6ff', '#388bfd', '#1f6feb', '#2ea043', '#f2cc60'];
+            
+            for (let i = 0; i < 80; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.top = -10 + 'px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.width = Math.random() * 8 + 4 + 'px';
+                confetti.style.height = Math.random() * 8 + 4 + 'px';
+                confetti.style.opacity = Math.random() * 0.7 + 0.3;
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '3px';
+                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                
+                confettiContainer.appendChild(confetti);
+                
+                const delay = Math.random() * 1.5;
+                const duration = Math.random() * 2.5 + 2;
+                
+                confetti.animate([
+                    { transform: `translate(0, 0) rotate(0deg)`, opacity: 1 },
+                    { transform: `translate(${Math.random() * 80 - 40}px, ${window.innerHeight}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+                ], {
+                    duration: duration * 1000,
+                    delay: delay * 1000,
+                    fill: 'forwards',
+                    easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)'
+                });
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, (duration + delay) * 1000);
+            }
+            
+            setTimeout(() => {
+                confettiContainer.style.display = 'none';
+            }, 5000);
+        }
+
+        // Submitter Event
+        expenseForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const item = itemInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+
+            if (!item || isNaN(amount) || amount <= 0 || !selectedCategory || !selectedPayer) {
+                flashMessage('請完整填寫項目、金額、分類和支付人！');
+                triggerPhoneHaptic(40);
+                return;
+            }
+
+            // Create record
+            const targetRecordId = editingId || generateIndependentRecordId();
+            const targetRecordDevice = editingDeviceId || activeDeviceId;
+
+            const record = {
+                id: targetRecordId,
+                item: item,
+                amount: amount,
+                currency: selectedCurrency,
+                category: selectedCategory,
+                payer: selectedPayer,
+                card: (selectedPayer === '震' || selectedPayer === '沛') ? selectedCard : null,
+                timestamp: timestampInput.value,
+                deviceId: targetRecordDevice // Inject Device Identifier
+            };
+
+            submitButton.innerHTML = '正在儲存項目...';
+            submitButton.disabled = true;
+
+            setTimeout(() => {
+                submitButton.disabled = false;
+                
+                if (editingId) {
+                    // Update composite index matching both id & device id
+                    records = records.map(r => (String(r.id) === String(editingId) && String(r.deviceId || 'legacy_import') === String(editingDeviceId)) ? record : r);
+                    flashMessage('消費紀錄已順利更新！', false);
+                } else {
+                    records.push(record);
+                    flashMessage('儲存成功！已記到本機中。', false);
+                    triggerPhoneHaptic(30);
+                }
+                
+                saveAndRender();
+                resetForm();
+            }, 600);
+        });
+        
+        // --- MOBILE OPTIMIZED TOUCH INTERACTIONS ---
+        
+        // Scroll-Aware Touch Trackers on custom category buttons container
+        categoryButtonContainer.addEventListener('touchstart', (e) => {
+            const btn = e.target.closest('.btn-option');
+            if (!btn) return;
+            
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            isMovingFinger = false;
+            activeCategoryElement = btn;
+            
+            // Fired long press with haptic buzz if scrolling doesn't disrupt it
+            longPressTimer = setTimeout(() => {
+                if (!isMovingFinger) {
+                    triggerPhoneHaptic(45);
+                    const rect = btn.getBoundingClientRect();
+                    // Float the dialog menu comfortably inside viewport
+                    longPressMenu.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                    longPressMenu.style.left = `${Math.min(rect.left + window.scrollX, window.innerWidth - 170)}px`;
+                    longPressMenu.classList.add('show');
+                }
+            }, 600);
+        });
+
+        categoryButtonContainer.addEventListener('touchmove', (e) => {
+            if (longPressTimer) {
+                const touch = e.touches[0];
+                const deltaX = Math.abs(touch.clientX - touchStartX);
+                const deltaY = Math.abs(touch.clientY - touchStartY);
+                // If moved meaningfully (meaning user is scrolling categories horizontally/vertically), abort long press
+                if (deltaX > 8 || deltaY > 8) {
+                    isMovingFinger = true;
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            }
+        });
+
+        categoryButtonContainer.addEventListener('touchend', (e) => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        });
+
+        // PC Mouse Fallback Events
+        categoryButtonContainer.addEventListener('mousedown', (e) => {
+            const btn = e.target.closest('.btn-option');
+            if (!btn) return;
+            
+            touchStartX = e.clientX;
+            touchStartY = e.clientY;
+            isMovingFinger = false;
+            activeCategoryElement = btn;
+            
+            longPressTimer = setTimeout(() => {
+                if (!isMovingFinger) {
+                    const rect = btn.getBoundingClientRect();
+                    longPressMenu.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                    longPressMenu.style.left = `${Math.min(rect.left + window.scrollX, window.innerWidth - 170)}px`;
+                    longPressMenu.classList.add('show');
+                }
+            }, 600);
+        });
+
+        categoryButtonContainer.addEventListener('mousemove', (e) => {
+            if (longPressTimer) {
+                const deltaX = Math.abs(e.clientX - touchStartX);
+                const deltaY = Math.abs(e.clientY - touchStartY);
+                if (deltaX > 8 || deltaY > 8) {
+                    isMovingFinger = true;
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            }
+        });
+
+        categoryButtonContainer.addEventListener('mouseup', () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        });
+
+        // Trigger safe select click without causing delay
+        categoryButtonContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-option');
+            if (!btn) return;
+            
+            // Abort if just completed context menu
+            if (longPressMenu.classList.contains('show')) {
+                return;
+            }
+            
+            const isSelected = btn.classList.contains('selected');
+            document.querySelectorAll('#categoryButtonContainer .btn-option').forEach(b => b.classList.remove('selected'));
+            
+            if (isSelected) {
+                selectedCategory = null;
+            } else {
+                btn.classList.add('selected');
+                selectedCategory = btn.dataset.category;
+                triggerPhoneHaptic(10);
+            }
+        });
+        
+        // Hide/Mask Category button action
+        hideCategoryBtn.addEventListener('click', () => {
+            if (activeCategoryElement) {
+                const categoryName = activeCategoryElement.dataset.category;
+                showConfirmDialog(`確定要排版隱藏「${categoryName}」分類選鈕嗎？(可手動到管理面板中復原顯示)`, () => {
+                    hiddenCategories.push(categoryName);
+                    saveAndRender();
+                    flashMessage(`分類項目「${categoryName}」已排版隱藏。`, false);
+                });
+            }
+            longPressMenu.classList.remove('show');
+            activeCategoryElement = null;
+        });
+
+        // Edit Category button action
+        modifyCategoryBtn.addEventListener('click', () => {
+            if (activeCategoryElement) {
+                const categoryName = activeCategoryElement.dataset.category;
+                const cat = categories.find(c => c.name === categoryName);
+                if (cat) {
+                    modalTitle.textContent = "修改分類內容";
+                    saveCategoryBtn.textContent = "確認修改";
+                    newCategoryEmojiInput.value = cat.emoji;
+                    newCategoryNameInput.value = cat.name;
+                    newCategoryColorInput.value = cat.color;
+                    colorPreview.style.backgroundColor = cat.color;
+                    editingCategoryName = cat.name;
+                    
+                    renderHiddenCategories();
+                    showModal(addCategoryModal);
+                }
+            }
+            longPressMenu.classList.remove('show');
+        });
+
+        // Dismiss menus when clicking background
+        document.addEventListener('click', (e) => {
+            if (!longPressMenu.contains(e.target) && !categoryButtonContainer.contains(e.target)) {
+                longPressMenu.classList.remove('show');
+            }
+        });
+        
+        // Payer choices
+        payerButtonContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (btn) {
+                const isSelected = btn.classList.contains('selected');
+                document.querySelectorAll('#payerButtonContainer .btn-option').forEach(b => b.classList.remove('selected'));
+                
+                if (!isSelected) {
+                    btn.classList.add('selected');
+                    selectedPayer = btn.dataset.payer;
+                    triggerPhoneHaptic(10);
+                    // Open sub credit cards if physical payer pre-paid
+                    if (selectedPayer === '震' || selectedPayer === '沛') {
+                        cardTypeContainer.classList.add('show');
+                    } else {
+                        cardTypeContainer.classList.remove('show');
+                        selectedCard = null;
+                        document.querySelectorAll('#cardButtonContainer .btn-option').forEach(b => b.classList.remove('selected'));
+                    }
+                } else {
+                    selectedPayer = null;
+                    cardTypeContainer.classList.remove('show');
+                    selectedCard = null;
+                }
+            }
+        });
+
+        // Cards pre-payment channels
+        cardButtonContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (btn) {
+                const isSelected = btn.classList.contains('selected');
+                document.querySelectorAll('#cardButtonContainer .btn-option').forEach(b => b.classList.remove('selected'));
+                if (!isSelected) {
+                    btn.classList.add('selected');
+                    selectedCard = btn.dataset.card;
+                    triggerPhoneHaptic(10);
+                } else {
+                    selectedCard = null;
+                }
+            }
+        });
+
+        // Open Record detailed spec with safe identifiers
+        recordList.addEventListener('click', (e) => {
+            const recordEl = e.target.closest('.summary-item');
+            if (!recordEl) return;
+            
+            const id = recordEl.dataset.id;
+            const devId = recordEl.dataset.deviceId || 'legacy_import';
+            
+            // Search matching BOTH id and deviceID to prevent cross-device sequence collisions!
+            const record = records.find(r => String(r.id) === String(id) && String(r.deviceId || 'legacy_import') === String(devId));
+            if (record) {
+                editingId = id;
+                editingDeviceId = devId;
+                
+                const recDate = new Date(record.timestamp);
+                const showDevice = record.deviceId || '不詳/舊有備份';
+                
+                modalContent.innerHTML = `
+                    <div style="display:flex; flex-direction:column; gap: 8px;">
+                        <div>🏷️ <strong>消費項目:</strong> ${record.item}</div>
+                        <div>📂 <strong>分類標籤:</strong> ${record.category || '未分類'}</div>
+                        <div style="font-size: 16px;">💰 <strong>金額幣值:</strong> <span style="font-family:var(--font-mono); color:#58a6ff; font-weight:700;">${record.currency === 'JPY' ? '¥' : '$'}${Number(record.amount || 0).toLocaleString()}</span></div>
+                        <div>👤 <strong>代墊付款:</strong> ${record.payer} ${record.card ? `(${record.card})` : ''}</div>
+                        <div>⏰ <strong>記帳時間:</strong> ${recDate.toLocaleString()}</div>
+                        <div style="font-size:10px; border-top:1px dashed #30363d; padding-top:6px; color:#8b949e; font-family:var(--font-mono);">
+                            💾 來源裝置編碼: ${showDevice}
+                        </div>
+                    </div>
+                `;
+                showModal(recordModal);
+            }
+        });
+
+        // Edit triggers
+        editRecordBtn.addEventListener('click', () => {
+            // Find with matching device ID and record ID
+            const recordToEdit = records.find(r => String(r.id) === String(editingId) && String(r.deviceId || 'legacy_import') === String(editingDeviceId));
+            if (recordToEdit) {
+                itemInput.value = recordToEdit.item;
+                amountInput.value = recordToEdit.amount;
+                selectedCurrency = recordToEdit.currency;
+                timestampInput.value = recordToEdit.timestamp;
+                selectedCategory = recordToEdit.category;
+                selectedPayer = recordToEdit.payer;
+                selectedCard = recordToEdit.card;
+                
+                document.querySelectorAll('.btn-option.selected').forEach(btn => btn.classList.remove('selected'));
+                
+                const categoryBtn = document.querySelector(`[data-category="${selectedCategory}"]`);
+                if (categoryBtn) categoryBtn.classList.add('selected');
+                
+                const currencyBtn = document.querySelector(`[data-currency="${selectedCurrency}"]`);
+                if (currencyBtn) currencyBtn.classList.add('selected');
+
+                const payerBtn = document.querySelector(`[data-payer="${selectedPayer}"]`);
+                if (payerBtn) payerBtn.classList.add('selected');
+
+                if (selectedPayer === '震' || selectedPayer === '沛') {
+                    cardTypeContainer.classList.add('show');
+                    const cardBtn = document.querySelector(`[data-card="${selectedCard}"]`);
+                    if (cardBtn) cardBtn.classList.add('selected');
+                } else {
+                    cardTypeContainer.classList.remove('show');
+                }
+
+                submitButton.innerHTML = `確認修改本筆 🖊️`;
+                hideModal(recordModal);
+                
+                // Scroll page smoothly to form top on phones
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                triggerPhoneHaptic(15);
+            }
+        });
+
+        // Delete matches
+        deleteRecordBtn.addEventListener('click', () => {
+            hideModal(recordModal);
+            showConfirmDialog('您確定要刪除這筆開銷紀錄嗎？(本機裝置資料將會直接移除)', () => {
+                // Safeguard deletion strategy: Filter matching composite key to avoid wiping duplicates!
+                records = records.filter(r => !(String(r.id) === String(editingId) && String(r.deviceId || 'legacy_import') === String(editingDeviceId)));
+                saveAndRender();
+                flashMessage('紀錄已在設備上成功移除。', false);
+                resetForm();
+            });
+        });
+
+        // Close details
+        closeModalBtn.addEventListener('click', () => {
+            hideModal(recordModal);
+            editingId = null;
+            editingDeviceId = null;
+        });
+        
+        // Currency switch options
+        currencyButtonContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (btn) {
+                document.querySelectorAll('#currencyButtonContainer .btn-option').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedCurrency = btn.dataset.currency;
+                triggerPhoneHaptic(10);
+            }
+        });
+
+        // 5. Raw exports incorporating current device identifiers
+        exportCsvButton.addEventListener('click', () => {
+            if (records.length === 0) {
+                flashMessage('目前本機無任何記帳數據。');
+                return;
+            }
+            
+            // Format column row headers: ID,消費時間,項目,分類,幣別,金額,支付方式,卡別,裝置ID
+            const header = 'ID,消費時間,項目,分類,幣別,金額,支付方式,卡別,裝置ID\n';
+            const rows = records.map(r => {
+                    const escapeCsv = (str) => {
+                        if (str === null || str === undefined) return '';
+                        let s = String(str);
+                        if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+                            return `"${s.replace(/"/g, '""')}"`;
+                        }
+                        return s;
+                    };
+                    return `${escapeCsv(r.id)},${escapeCsv(r.timestamp)},${escapeCsv(r.item)},${escapeCsv(r.category)},${escapeCsv(r.currency)},${escapeCsv(r.amount)},${escapeCsv(r.payer)},${escapeCsv(r.card)},${escapeCsv(r.deviceId || 'legacy_import')}`;
+                }).join('\n');
+            
+            const csvContent = header + rows;
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            const today = new Date().toISOString().slice(0, 10);
+            link.setAttribute('download', `沖繩記帳存摺_${today}_${activeDeviceId}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            triggerPhoneHaptic(30);
+            
+            setTimeout(() => {
+                showConfirmDialog('開銷存摺 CSV 匯出成功！您是否要同時抹除當前這台裝置上的本機網頁暫存？(若要跟另一台裝置同步/備份，匯出後此動作可保持本機乾淨，建議先保管好匯出的檔案)', () => {
+                    records = [];
+                    localStorage.removeItem('expenses');
+                    saveAndRender();
+                    flashMessage('這台設備上的本機快取已完全清除。', false);
+                });
+            }, 600);
+        });
+
+        // Import CSV trigger
+        importCsvButton.addEventListener('click', () => {
+            csvFileInput.click();
+            triggerPhoneHaptic(10);
+        });
+
+        csvFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                parseAndImportCsv(e.target.result);
+                csvFileInput.value = '';
+            };
+            reader.onerror = () => {
+                flashMessage('讀取檔案發生異常錯誤。');
+                csvFileInput.value = '';
+            };
+            reader.readAsText(file);
+        });
+        
+        // Custom interactive visual panel for Category editing & unhiding
+        manageCategoriesBtn.addEventListener('click', () => {
+            modalTitle.textContent = "管理與隱藏分類";
+            saveCategoryBtn.textContent = "新增分類項目";
+            newCategoryEmojiInput.value = '';
+            newCategoryNameInput.value = '';
+            newCategoryColorInput.value = '#3B82F6';
+            colorPreview.style.backgroundColor = '#3B82F6';
+            editingCategoryName = null;
+            
+            renderHiddenCategories();
+            showModal(addCategoryModal);
+        });
+        
+        addNewCategoryBtn.addEventListener('click', () => {
+            modalTitle.textContent = "新增分類項目";
+            saveCategoryBtn.textContent = "確認新增";
+            newCategoryEmojiInput.value = '';
+            newCategoryNameInput.value = '';
+            newCategoryColorInput.value = '#3B82F6';
+            colorPreview.style.backgroundColor = '#3B82F6';
+            editingCategoryName = null;
+            
+            renderHiddenCategories();
+            showModal(addCategoryModal);
+        });
+
+        // Live color preview listener
+        newCategoryColorInput.addEventListener('input', (e) => {
+            colorPreview.style.backgroundColor = e.target.value;
+        });
+
+        // Add Category Modals Action
+        saveCategoryBtn.addEventListener('click', () => {
+            const emoji = newCategoryEmojiInput.value.trim();
+            const name = newCategoryNameInput.value.trim();
+            const color = newCategoryColorInput.value.trim();
+            
+            if (!emoji || !name || !color) {
+                flashMessage('請填寫所有分類欄位 (符號、名稱、顏色)！', true);
+                return;
+            }
+            
+            if (editingCategoryName) {
+                const categoryToUpdate = categories.find(c => c.name === editingCategoryName);
+                if (categoryToUpdate) {
+                    if (name !== editingCategoryName && categories.some(c => c.name === name)) {
+                        flashMessage('此分類名稱在資料庫中已重覆！', true);
+                        return;
+                    }
+                    
+                    categoryToUpdate.emoji = emoji;
+                    categoryToUpdate.color = color;
+                    categoryToUpdate.name = name;
+                    
+                    // Replace references on previous item logs
+                    records.forEach(record => {
+                        if (record.category === editingCategoryName) {
+                            record.category = name;
+                        }
+                    });
+                    
+                    // Keep alignment on hidden item arrays
+                    const hiddenIndex = hiddenCategories.indexOf(editingCategoryName);
+                    if (hiddenIndex > -1) {
+                        hiddenCategories[hiddenIndex] = name;
+                    }
+                    
+                    flashMessage(`分類項目「${name}」已成功更新！`, false);
+                }
+            } else {
+                const existingCategory = categories.find(c => c.name === name);
+                if (existingCategory) {
+                    flashMessage('此分類名稱已存在列表中！', true);
+                    return;
+                }
+                categories.push({ name, emoji, color });
+                flashMessage(`新分類項目「${name}」已順利新增！`, false);
+            }
+
+            editingCategoryName = null;
+            saveAndRender();
+            hideModal(addCategoryModal);
+        });
+
+        cancelCategoryBtn.addEventListener('click', () => {
+            hideModal(addCategoryModal);
+        });
+        
+        // Click handlers on hidden list buttons inside modal
+        hiddenCategoriesList.addEventListener('click', (e) => {
+            const unhideBtn = e.target.closest('.unhide-btn');
+            const editBtn = e.target.closest('.edit-category-btn');
+
+            if (unhideBtn) {
+                const categoryName = unhideBtn.dataset.category;
+                hiddenCategories = hiddenCategories.filter(cat => cat !== categoryName);
+                saveAndRender();
+                renderHiddenCategories();
+                flashMessage(`「${categoryName}」分類選鈕已復原顯示。`, false);
+                triggerPhoneHaptic(10);
+            } else if (editBtn) {
+                const categoryName = editBtn.dataset.category;
+                const cat = categories.find(c => c.name === categoryName);
+                if (cat) {
+                    modalTitle.textContent = "修改分類內容";
+                    saveCategoryBtn.textContent = "確認修改";
+                    newCategoryEmojiInput.value = cat.emoji;
+                    newCategoryNameInput.value = cat.name;
+                    newCategoryColorInput.value = cat.color;
+                    colorPreview.style.backgroundColor = cat.color;
+                    editingCategoryName = cat.name;
+                }
+            }
+        });
+
+        // Exchange rate dynamic inputs change trigger
+        exchangeRateInput.addEventListener('change', () => {
+            let rate = parseFloat(exchangeRateInput.value);
+            if (isNaN(rate) || rate <= 0) {
+                rate = 0.2;
+                exchangeRateInput.value = 0.2;
+            }
+            exchangeRate = rate;
+            localStorage.setItem('exchangeRate', rate);
+            saveAndRender();
+        });
+
+        // 6. Interactive Analytics Modal with Chart.js Integration
+        const showAnalysis = () => {
+            if (records.length === 0) {
+                flashMessage('尚無記帳紀錄，無法進行分析！', false);
+                return;
+            }
+            
+            // Exclude "交通卡" for core analytical computation
+            const filteredRecords = records.filter(r => r.payer !== '交通卡');
+            if (filteredRecords.length === 0) {
+                flashMessage('尚無有效消費支出以供分析！', false);
+                return;
+            }
+
+            // Calculations
+            anaTotalCount.textContent = `${filteredRecords.length} 筆`;
+
+            let maxExpenseVal = -1;
+            let maxExpenseItem = "無";
+            let totalConvertedTwd = 0;
+            
+            const categorySums = {};
+            const paymentSums = {};
+
+            filteredRecords.forEach(r => {
+                const amt = Number(r.amount) || 0;
+                const twdAmt = r.currency === 'JPY' ? (amt * exchangeRate) : amt;
+                totalConvertedTwd += twdAmt;
+
+                if (twdAmt > maxExpenseVal) {
+                    maxExpenseVal = twdAmt;
+                    const currencySymbol = r.currency === 'JPY' ? '¥' : '$';
+                    maxExpenseItem = `${r.item} (${currencySymbol}${amt.toLocaleString()})`;
+                }
+
+                categorySums[r.category || '其它'] = (categorySums[r.category || '其它'] || 0) + twdAmt;
+
+                const payKey = `${r.payer}${r.card ? ' (' + r.card + ')' : ''}`;
+                paymentSums[payKey] = (paymentSums[payKey] || 0) + twdAmt;
+            });
+
+            anaMaxExpense.textContent = maxExpenseItem;
+            const avgVal = totalConvertedTwd / filteredRecords.length;
+            anaAvgExpense.textContent = `NT$ ${Math.round(avgVal).toLocaleString()}`;
+
+            let topCat = "無";
+            let topCatMax = -1;
+            for (const cat in categorySums) {
+                if (categorySums[cat] > topCatMax) {
+                    topCatMax = categorySums[cat];
+                    topCat = cat;
+                }
+            }
+            const matchCat = categories.find(c => c.name === topCat);
+            anaTopCategory.textContent = matchCat ? `${matchCat.emoji} ${topCat}` : topCat;
+
+            // Render Charts
+            renderCategoryChart(categorySums);
+            renderPaymentChart(paymentSums);
+            renderDailyTrendChart(filteredRecords);
+
+            showModal(analysisModal);
+        };
+
+        const renderCategoryChart = (categorySums) => {
+            if (categoryChart) {
+                categoryChart.destroy();
+            }
+
+            const ctx = document.getElementById('categoryDistributionChart').getContext('2d');
+            
+            const labels = [];
+            const data = [];
+            const backgroundColors = [];
+
+            for (const catName in categorySums) {
+                const catDef = categories.find(c => c.name === catName) || { emoji: '🤷', color: '#4b5563' };
+                labels.push(`${catDef.emoji} ${catName}`);
+                data.push(Math.round(categorySums[catName]));
+                backgroundColors.push(catDef.color || '#4b5563');
+            }
+
+            categoryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderWidth: 1,
+                        borderColor: '#161b22'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#c9d1d9',
+                                font: {
+                                    size: 10,
+                                    family: 'Noto Sans TC'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ${context.label}: NT$ ${context.parsed.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+
+        const renderPaymentChart = (paymentSums) => {
+            if (paymentChart) {
+                paymentChart.destroy();
+            }
+
+            const ctx = document.getElementById('paymentDistributionChart').getContext('2d');
+            
+            const labels = [];
+            const data = [];
+            
+            const payerColors = {
+                '震': '#58a6ff',
+                '沛': '#ff7b72',
+                '現金': '#e3b341',
+                '其它': '#8b949e'
+            };
+            const backgroundColors = [];
+
+            let colorIdx = 0;
+            const extraColors = ['#bc8cff', '#56db81', '#ff9b72', '#7ee787'];
+
+            for (const payKey in paymentSums) {
+                labels.push(payKey);
+                data.push(Math.round(paymentSums[payKey]));
+                
+                let assignedColor = '#8b949e';
+                for (const baseKey in payerColors) {
+                    if (payKey.includes(baseKey)) {
+                        assignedColor = payerColors[baseKey];
+                        break;
+                    }
+                }
+                if (assignedColor === '#8b949e') {
+                    assignedColor = extraColors[colorIdx % extraColors.length];
+                    colorIdx++;
+                }
+                backgroundColors.push(assignedColor);
+            }
+
+            paymentChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderWidth: 1,
+                        borderColor: '#161b22'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#c9d1d9',
+                                font: {
+                                    size: 10,
+                                    family: 'Noto Sans TC'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ${context.label}: NT$ ${context.parsed.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+
+        const renderDailyTrendChart = (filteredRecords) => {
+            if (dailyChart) {
+                dailyChart.destroy();
+            }
+
+            const ctx = document.getElementById('dailyTrendChart').getContext('2d');
+
+            const dailySums = {};
+            const chronologicalRecords = [...filteredRecords].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+            chronologicalRecords.forEach(r => {
+                const date = new Date(r.timestamp);
+                const key = `${date.getMonth() + 1}/${date.getDate()}`;
+                const amt = Number(r.amount) || 0;
+                const twdAmt = r.currency === 'JPY' ? (amt * exchangeRate) : amt;
+                
+                dailySums[key] = (dailySums[key] || 0) + twdAmt;
+            });
+
+            const labels = Object.keys(dailySums);
+            const data = Object.values(dailySums).map(v => Math.round(v));
+
+            dailyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '每日消費 (TWD)',
+                        data: data,
+                        borderColor: '#58a6ff',
+                        backgroundColor: 'rgba(88, 166, 255, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#58a6ff',
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { color: '#21262d' },
+                            ticks: { color: '#8b949e', font: { size: 9 } }
+                        },
+                        y: {
+                            grid: { color: '#21262d' },
+                            ticks: { color: '#8b949e', font: { size: 9 } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` 當日總額: NT$ ${context.parsed.y.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+
+        // Old UI Event Listeners for Analysis Dialog
+        overallTotalCard.addEventListener('click', showAnalysis);
+        closeAnalysisModalBtn.addEventListener('click', () => hideModal(analysisModal));
+        closeAnalysisModalIcon.addEventListener('click', () => hideModal(analysisModal));
+
+        // Execution boots
+        loadData();
+        resetForm();
+        saveAndRender();
+    } // Closes obsoleteAppLoader
+</script>
+</body>
+</html>
