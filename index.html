@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>沖繩快速記帳與分帳</title>
+    <title>快速記帳</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -159,8 +159,8 @@
                     <span class="text-[10px] font-bold font-mono text-emerald-400 uppercase tracking-wider">Sync Live</span>
                 </div>
 
-                <h1 class="text-2xl font-extrabold text-white tracking-tight">沖繩快速記帳</h1>
-                <p class="text-xs text-gray-400 mt-1">來去看沖繩狗勾囉～ 🐕🏝️</p>
+                <h1 class="text-2xl font-extrabold text-white tracking-tight">快速記帳</h1>
+                <p class="text-xs text-gray-400 mt-1">去大阪看石川祐希！ 🏐🐕</p>
 
                 <!-- Profile and Signout -->
                 <div class="mt-4 p-3 bg-[#0d1117] rounded-xl border border-[#21262d] flex items-center justify-between text-xs text-left">
@@ -215,54 +215,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- STATISTICS DASHBOARD BLOCK -->
-            <div class="bg-gradient-to-br from-[#161b22] to-[#1f242c] border border-[#30363d] rounded-2xl p-4 gap-3 flex flex-col shadow-md">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-bold text-[#10b981] flex items-center gap-1.5 border-l-3 border-[#10b981] pl-2">
-                        📊 旅程開銷與分帳試算
-                    </span>
-                    <div class="flex items-center gap-1 text-[11px] text-gray-400 font-medium">
-                        日幣匯率:
-                        <input id="exchangeRateInput" type="number" step="0.001" min="0.01" class="w-14 bg-[#0d1117] border border-[#30363d] rounded-md text-center text-[#58a6ff] text-xs font-bold font-mono py-0.5" value="0.2">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <div id="overallTotalCard" class="col-span-2 bg-[#0d1117] border border-[#388bfd] hover:border-blue-400 rounded-xl p-3 text-left relative cursor-pointer group transition-all">
-                        <div class="absolute top-2 right-2 flex items-center gap-1 bg-[#21262d] border border-[#30363d] py-1 px-2.5 rounded-full text-[10px] text-gray-400 font-semibold group-hover:text-blue-400 cursor-pointer">
-                            📊 點此看圖表分析
-                        </div>
-                        <span class="text-[11px] font-semibold text-blue-400 block">🌍 整體支出代墊 (折合台幣)</span>
-                        <span id="dashboardOverallTotalTwd" class="text-2xl font-black text-blue-400 block mt-1.5 font-mono">NT$ 0</span>
-                        <div class="flex gap-4 mt-2 text-[10px] text-gray-500 border-t border-[#21262d] pt-1.5">
-                            <span id="overallJpySum" class="font-mono">日幣: ¥0</span>
-                            <span id="overallTwdSum" class="font-mono">台幣: NT$0</span>
-                        </div>
-                    </div>
-
-                    <div class="bg-[#0d1117] border border-[#21262d] rounded-xl p-3">
-                        <span class="text-[11px] text-gray-500 font-semibold block">💴 日幣開銷總計</span>
-                        <span id="dashboardTotalJpy" class="text-lg font-bold text-white block mt-1 font-mono">¥0</span>
-                        <div id="dbSubJpy" class="text-[10px] text-slate-500 flex flex-col gap-0.5 mt-2 border-t border-[#21262d] pt-1.5">
-                            <div class="flex justify-between font-mono"><span>震付:</span><span>¥0</span></div>
-                            <div class="flex justify-between font-mono"><span>沛付:</span><span>¥0</span></div>
-                            <div class="flex justify-between font-mono"><span>現金:</span><span>¥0</span></div>
-                        </div>
-                    </div>
-
-                    <div class="bg-[#0d1117] border border-[#21262d] rounded-xl p-3">
-                        <span class="text-[11px] text-gray-500 font-semibold block">💵 台幣開銷總計</span>
-                        <span id="dashboardTotalTwd" class="text-lg font-bold text-white block mt-1 font-mono">NT$0</span>
-                        <div id="dbSubTwd" class="text-[10px] text-slate-500 flex flex-col gap-0.5 mt-2 border-t border-[#21262d] pt-1.5">
-                            <div class="flex justify-between font-mono"><span>震付:</span><span>NT$0</span></div>
-                            <div class="flex justify-between font-mono"><span>沛付:</span><span>NT$0</span></div>
-                            <div class="flex justify-between font-mono"><span>現金:</span><span>NT$0</span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- EXPENSE INPUT FORM -->
             <form id="expenseForm" class="bg-[#161b22] border border-[#21262d] rounded-2xl p-5 shadow-lg space-y-4">
                 <div class="text-sm font-bold text-white flex items-center gap-1 border-l-3 border-[#3B82F6] pl-2">
@@ -360,6 +312,57 @@
                     <!-- Loaded dynamically -->
                 </div>
             </div>
+            
+            <!-- STATISTICS DASHBOARD BLOCK -->
+            <div class="bg-gradient-to-br from-[#161b22] to-[#1f242c] border border-[#30363d] rounded-2xl p-4 gap-3 flex flex-col shadow-md">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-bold text-[#10b981] flex items-center gap-1.5 border-l-3 border-[#10b981] pl-2">
+                        📊 旅程開銷與分帳試算
+                    </span>
+                    <div class="flex items-center gap-1 text-[11px] text-gray-400 font-medium">
+                        日幣匯率:
+                        <input id="exchangeRateInput" type="number" step="0.001" min="0.01" class="w-14 bg-[#0d1117] border border-[#30363d] rounded-md text-center text-[#58a6ff] text-xs font-bold font-mono py-0.5" value="0.2">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div id="overallTotalCard" class="col-span-2 bg-[#0d1117] border border-[#388bfd] hover:border-blue-400 rounded-xl p-3 text-left relative cursor-pointer group transition-all">
+                        <div class="absolute top-2 right-2 flex items-center gap-1 bg-[#21262d] border border-[#30363d] py-1 px-2.5 rounded-full text-[10px] text-gray-400 font-semibold group-hover:text-blue-400 cursor-pointer">
+                            📊 點此看圖表分析
+                        </div>
+                        <span class="text-[11px] font-semibold text-blue-400 block">🌍 整體支出代墊 (折合台幣)</span>
+                        <span id="dashboardOverallTotalTwd" class="text-2xl font-black text-blue-400 block mt-1.5 font-mono">NT$ 0</span>
+                        <div class="flex gap-4 mt-2 text-[10px] text-gray-500 border-t border-[#21262d] pt-1.5">
+                            <span id="overallJpySum" class="font-mono">日幣: ¥0</span>
+                            <span id="overallTwdSum" class="font-mono">台幣: NT$0</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#0d1117] border border-[#21262d] rounded-xl p-3">
+                        <span class="text-[11px] text-gray-500 font-semibold block">💴 日幣開銷總計</span>
+                        <span id="dashboardTotalJpy" class="text-lg font-bold text-white block mt-1 font-mono">¥0</span>
+                        <div id="dbSubJpy" class="text-[10px] text-slate-500 flex flex-col gap-0.5 mt-2 border-t border-[#21262d] pt-1.5">
+                            <div class="flex justify-between font-mono"><span>震付:</span><span>¥0</span></div>
+                            <div class="flex justify-between font-mono"><span>沛付:</span><span>¥0</span></div>
+                            <div class="flex justify-between font-mono"><span>現金:</span><span>¥0</span></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#0d1117] border border-[#21262d] rounded-xl p-3">
+                        <span class="text-[11px] text-gray-500 font-semibold block">💵 台幣開銷總計</span>
+                        <span id="dashboardTotalTwd" class="text-lg font-bold text-white block mt-1 font-mono">NT$0</span>
+                        <div id="dbSubTwd" class="text-[10px] text-slate-500 flex flex-col gap-0.5 mt-2 border-t border-[#21262d] pt-1.5">
+                            <div class="flex justify-between font-mono"><span>震付:</span><span>NT$0</span></div>
+                            <div class="flex justify-between font-mono"><span>沛付:</span><span>NT$0</span></div>
+                            <div class="flex justify-between font-mono"><span>現金:</span><span>NT$0</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+
 
             <!-- CSV ACTIONS -->
             <div class="flex gap-3">
