@@ -1,0 +1,111 @@
+{
+  "entities": {
+    "Trip": {
+      "title": "Trip",
+      "description": "Represents a shared travel group with unique members.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the trip."
+        },
+        "name": {
+          "type": "string",
+          "description": "The custom name of the trip."
+        },
+        "members": {
+          "type": "array",
+          "description": "Array of Firebase user UIDs allowed to access the trip and expenses."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp indicating when the trip was created."
+        }
+      },
+      "required": ["id", "name", "members"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "An accounting transaction record inside a single trip.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique ID of the expense record."
+        },
+        "title": {
+          "type": "string",
+          "description": "The description/name of the expense item."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Quantity/cost of the item."
+        },
+        "currency": {
+          "type": "string",
+          "enum": ["JPY", "TWD"],
+          "description": "The currency of the expense."
+        },
+        "category": {
+          "type": "string",
+          "description": "Category name for classification."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["震", "沛", "現金", "交通卡"],
+          "description": "Who paid or how it was paid."
+        },
+        "cardName": {
+          "type": "string",
+          "description": "Optional card brand used for payment."
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "User selected date/time of the expense."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Creator user UID."
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "User email address."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server set timestamp."
+        }
+      },
+      "required": ["id", "title", "amount", "currency", "category", "paymentMethod", "date", "userId", "userEmail"]
+    },
+    "AllowedUser": {
+      "title": "AllowedUser",
+      "description": "Represents a whitelisted user email allowed to access the app.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "The whitelisted user's email."
+        }
+      },
+      "required": ["email"]
+    }
+  },
+  "firestore": {
+    "/trips/{tripId}": {
+      "schema": "Trip",
+      "description": "The root document for a shared trip."
+    },
+    "/trips/{tripId}/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "Detailed subcollection of expenses associated with a specific trip."
+    },
+    "/allowed_users/{email}": {
+      "schema": "AllowedUser",
+      "description": "Whitelisted email entries checked on login."
+    }
+  }
+}

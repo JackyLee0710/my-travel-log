@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Harden Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      // In development or preview environments, we default to standard Google Sign-In checks.
+      return isSignedIn() && (request.auth.token.email_verified == true);
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Whitelist allowed users check
+    match /allowed_users/{email} {
+      allow get: if isSignedIn();
+      allow list, write: if false;
+    }
+
+    // Trips Collection
+    match /trips/{tripId} {
+      function isValidTrip(data) {
+        return data.keys().hasAll(['id', 'name', 'members', 'createdAt'])
+            && data.keys().size() == 4
+            && data.id is string && data.id.size() <= 128
+            && data.name is string && data.name.size() <= 128
+            && data.members is list
+            && data.members.size() <= 100;
+      }
+
+      function isTripMember(tripMembers) {
+        return isSignedIn() && tripMembers.hasAny([request.auth.uid]);
+      }
+
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && isTripMember(existing().members);
+
+      allow create: if isSignedIn() 
+                    && isValidId(tripId) 
+                    && isValidTrip(incoming())
+                    && incoming().id == tripId
+                    && incoming().members.hasAny([request.auth.uid]);
+
+      allow update: if isSignedIn()
+                    && isValidTrip(incoming())
+                    && isTripMember(existing().members)
+                    && (
+                      // Action: Join or update trip members
+                      incoming().diff(existing()).affectedKeys().hasOnly(['members']) ||
+                      // Action: Rename Trip
+                      incoming().diff(existing()).affectedKeys().hasOnly(['name'])
+                    );
+
+      allow delete: if false;
+
+      // Expenses Subcollection (Sub-resource access mapped to Trip membership)
+      match /expenses/{expenseId} {
+        function isValidExpense(data) {
+          return data.keys().hasAll(['id', 'title', 'amount', 'currency', 'category', 'paymentMethod', 'cardName', 'date', 'userId', 'userEmail', 'createdAt'])
+              && data.keys().size() == 11
+              && data.id is string && data.id.size() <= 128
+              && data.title is string && data.title.size() <= 120
+              && data.amount is number
+              && data.currency is string && (data.currency == 'JPY' || data.currency == 'TWD')
+              && data.category is string && data.category.size() <= 60
+              && data.paymentMethod is string && data.paymentMethod.size() <= 40
+              && (data.cardName == null || (data.cardName is string && data.cardName.size() <= 40))
+              && data.date is string && data.date.size() <= 40
+              && data.userId == request.auth.uid
+              && data.userEmail == request.auth.token.email;
+        }
+
+        function isParentTripMember() {
+          return isSignedIn() && get(/databases/$(database)/documents/trips/$(tripId)).data.members.hasAny([request.auth.uid]);
+        }
+
+        allow get: if isSignedIn() && isParentTripMember();
+        allow list: if isSignedIn() && isParentTripMember();
+
+        allow create: if isSignedIn()
+                      && isValidId(expenseId)
+                      && isValidExpense(incoming())
+                      && incoming().id == expenseId
+                      && isParentTripMember();
+
+        allow update: if isSignedIn()
+                      && isValidExpense(incoming())
+                      && incoming().id == existing().id
+                      && incoming().userId == existing().userId
+                      && isParentTripMember()
+                      && incoming().diff(existing()).affectedKeys().hasAny(['title', 'amount', 'currency', 'category', 'paymentMethod', 'cardName', 'date', 'createdAt']);
+
+        allow delete: if isSignedIn()
+                      && isParentTripMember();
+      }
+    }
+  }
+}

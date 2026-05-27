@@ -1,0 +1,6 @@
+{
+  "name": "沖繩快速記帳",
+  "description": "即時雲端同步與分帳試算，支援多旅伴、多卡別代墊統計與 CSV 匯出匯入。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
