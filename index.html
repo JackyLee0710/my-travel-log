@@ -1470,6 +1470,49 @@ const firebaseConfig = {
             modalElement.classList.remove('show');
         };
 
+        // Confetti Canvas Particle Spawner
+        function createConfetti() {
+            if (!confettiContainer) return;
+            confettiContainer.style.display = 'block';
+            const colors = ['#58a6ff', '#388bfd', '#1f6feb', '#2ea043', '#f2cc60'];
+            
+            for (let i = 0; i < 80; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.top = -10 + 'px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.width = Math.random() * 8 + 4 + 'px';
+                confetti.style.height = Math.random() * 8 + 4 + 'px';
+                confetti.style.opacity = Math.random() * 0.7 + 0.3;
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '3px';
+                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                
+                confettiContainer.appendChild(confetti);
+                
+                const delay = Math.random() * 1.5;
+                const duration = Math.random() * 2.5 + 2;
+                
+                confetti.animate([
+                    { transform: `translate(0, 0) rotate(0deg)`, opacity: 1 },
+                    { transform: `translate(${Math.random() * 80 - 40}px, ${window.innerHeight}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+                ], {
+                    duration: duration * 1000,
+                    delay: delay * 1000,
+                    fill: 'forwards',
+                    easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)'
+                });
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, (duration + delay) * 1000);
+            }
+            
+            setTimeout(() => {
+                confettiContainer.style.display = 'none';
+            }, 5000);
+        }
+
         // UI State Machine
         function showScreen(screenId) {
             loadingContainer.style.display = 'none';
@@ -1501,7 +1544,7 @@ const firebaseConfig = {
 
             try {
                 // Fetch trips where user is a member
-                const tripsQuery = query(collection(db, 'trips'), where('members', 'arrayContains', currentUser.uid));
+                const tripsQuery = query(collection(db, 'trips'), where('members', 'array-contains', currentUser.uid));
                 const querySnap = await getDocs(tripsQuery);
                 
                 trips = [];
